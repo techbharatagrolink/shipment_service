@@ -1,40 +1,52 @@
-FROM dunglas/frankenphp:1.1-php8.2
+# ===============================
+# 1. Build container
+# ===============================
+FROM dunglas/frankenphp:latest AS builder
 
-# Debian-based → use apt-get
-RUN apt-get update && apt-get install -y \
-    bash git zip unzip curl supervisor libicu-dev libjpeg-dev libpng-dev libwebp-dev libzip-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-RUN install-php-extensions \
-    pdo_mysql \
-    bcmath \
-    sockets \
-    intl \
-    gd \
-    zip \
-    redis \
-    exif \
-    opcache
-
-# Set working dir
+# Setup working directory
 WORKDIR /app
 
-# Copy app
-COPY . .
+# Install required system packages
+RUN apt-get update && apt-get install -y \
+    git curl unzip libpq-dev libzip-dev libpng-dev \
+    && docker-php-ext-install pdo pdo_mysql zip gd
 
-# Install composer
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install dependencies
+# Copy app source
+COPY . .
+
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Build Laravel cache
+RUN php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
 
-# Supervisor config
-COPY supervisord.conf /etc/supervisord.conf
+# ===============================
+# 2. Production runtime (FrankenPHP)
+# ===============================
+FROM dunglas/frankenphp:latest
 
+WORKDIR /app
+
+# Copy built application
+COPY --from=builder /app /app
+
+# Expose port
 EXPOSE 8080
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+# Ensure storage permissions
+RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
+
+# ===============================
+# RUN OCTANE WITH FRANKENPHP
+# ===============================
+# FrankenPHP automatically runs PHP apps; we tell it to serve Octane
+#
+# The octane server runs on 8080 inside container
+# ===============================
+
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8080"]
