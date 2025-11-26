@@ -1,0 +1,7 @@
+{
+    "agents": [
+        "gemini",
+        "phpstorm"
+    ],
+    "guidelines": []
+}
