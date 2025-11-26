@@ -1,26 +1,26 @@
-# -----------------------------------------------------
-# Base FrankenPHP Image
-# -----------------------------------------------------
 FROM dunglas/frankenphp:1.1-php8.2
 
-# Install dependencies
-RUN apk add --no-cache bash git zip unzip curl supervisor
+# Debian-based → use apt-get
+RUN apt-get update && apt-get install -y \
+    bash git zip unzip curl supervisor libicu-dev libjpeg-dev libpng-dev libwebp-dev libzip-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions required by Laravel
+# Install PHP extensions
 RUN install-php-extensions \
     pdo_mysql \
     bcmath \
     sockets \
-    redis \
-    gd \
     intl \
+    gd \
+    zip \
+    redis \
     exif \
     opcache
 
-# -----------------------------------------------------
-# Setup application
-# -----------------------------------------------------
+# Set working dir
 WORKDIR /app
+
+# Copy app
 COPY . .
 
 # Install composer
@@ -29,15 +29,12 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
+# Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# -----------------------------------------------------
-# Add Supervisor config
-# -----------------------------------------------------
+# Supervisor config
 COPY supervisord.conf /etc/supervisord.conf
 
-# Expose FrankenPHP port
 EXPOSE 8080
 
-# Start Supervisor (which starts Octane, queue worker, scheduler)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
