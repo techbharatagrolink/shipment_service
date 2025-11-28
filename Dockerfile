@@ -15,17 +15,44 @@ RUN npm ci && npm run build
 FROM dunglas/frankenphp:latest
 WORKDIR /app
 
+# Install PHP extensions + supervisor
 RUN install-php-extensions \
-    pdo_mysql gd zip intl bcmath pcntl opcache
+    pdo_mysql gd zip intl bcmath pcntl opcache \
+    && apt-get update && apt-get install -y supervisor
 
-# Copy app first
+# Copy app
 COPY --from=composer_build /app /app
 COPY --from=frontend_build /app/public /app/public
 
-# Fix permissions BEFORE switching user
-RUN chown -R www-data:www-data /app && \
-    chmod -R 775 /app/storage /app/bootstrap/cache
+# Fix ALL permissions
+RUN mkdir -p /data/caddy /config/caddy /var/log/supervisor \
+    && chown -R www-data:www-data /app /data/caddy /config/caddy /var/log/supervisor \
+    && chmod -R 775 /app/storage /app/bootstrap/cache
 
 USER www-data
 EXPOSE 8080
-CMD ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8080"]
+
+# Supervisord config (runs both Octane + Queue worker)
+COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
+[supervisord]
+nodaemon=true
+user=www-data
+
+[program:octane]
+command=php artisan octane:frankenphp --host=0.0.0.0 --port=8080
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/octane.err.log
+stdout_logfile=/var/log/supervisor/octane.out.log
+
+[program:queue]
+command=php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+directory=/app
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/queue.err.log
+stdout_logfile=/var/log/supervisor/queue.out.log
+EOF
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
