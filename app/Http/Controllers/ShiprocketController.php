@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessTask;
 use App\Mail\TestMail;
 use App\Models\Shipment;
 use App\Services\ShiprocketService;
@@ -374,9 +375,29 @@ class ShiprocketController extends Controller
             return response()->json($response->json());
         }
 
-        return response()->json(['error' => 'Tracking failed', 'details' => $response->json()], 500);
+        return response()->json(['error' => 'Tracking failed by Shipment Id', 'details' => $response->json()], 500);
     }
 
+    public function trackShipmentAWB($awb)
+    {
+        $response = $this->shiprocket->trackShipmentAWB($awb);
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+        return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
+    }
+
+    public function trackShipmentOrder(Request $request)
+    {
+        //dd($request);
+        $trackData = $request->all();
+
+        $response = $this->shiprocket->trackShipmentOrder($trackData);
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+        return response()->json(['error' => 'Tracking failed By Order', 'details' => $response->json()], 500);
+    }
     public function cancelShipment(Request $request)
     {
         $validated = $request->validate([
@@ -786,6 +807,13 @@ class ShiprocketController extends Controller
             return response()->json($response->json());
         }
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
+    }
+
+    public function demoQueue()
+    {
+
+        ProcessTask::dispatch()->onQueue('high')->withoutDelay();
+        return response()->json(['msg' => 'put to Queue'], 200);
     }
 
 }

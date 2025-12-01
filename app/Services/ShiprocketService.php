@@ -105,14 +105,28 @@ class ShiprocketService
             ->post("https://apiv2.shiprocket.in/v1/external/shipments/create/return-shipment",$shipmentData);
     }
 
+
+    //Tracking
     public function trackShipment(string $shipmentId)
     {
         $token = $this->authenticate();
 
         return Http::withToken($token)
-            ->get('https://apiv2.shiprocket.in/v1/external/courier/track/shipment', [
-                'shipment_id' => $shipmentId,
-            ]);
+            ->get('https://apiv2.shiprocket.in/v1/external/courier/track/shipment/'.$shipmentId);
+    }
+
+    public function trackShipmentAWB(string $awb)
+    {
+        $token = $this->authenticate();
+        return Http::withToken($token)
+            ->get("https://apiv2.shiprocket.in/v1/external/courier/track/awb/" . $awb);
+    }
+
+    public function trackShipmentOrder(array $trackData)
+    {
+        $token = $this->authenticate();
+        return Http::withToken($token)
+            ->get("https://apiv2.shiprocket.in/v1/external/courier/track",$trackData);
     }
 
     public function cancelShipment(array $awbs)

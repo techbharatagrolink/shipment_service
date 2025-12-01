@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DelhiveryController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +25,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/generateLabel', [ShiprocketController::class, 'generateLabel']);
     Route::post('/orders/generateInvoice', [ShiprocketController::class, 'generateInvoice']);
 
-    Route::get('/shipments/track/{shipmentId}', [ShiprocketController::class, 'trackShipment']);
+    Route::get('/shipments/track/shipment/{shipmentId}', [ShiprocketController::class, 'trackShipment']);
+    Route::get('/shipments/track/awb/{awb}', [ShiprocketController::class, 'trackShipmentAWB']);
+    Route::get('/shipments/track/order', [ShiprocketController::class, 'trackShipmentOrder']);
+
+
     Route::post('/shipments/cancel/', [ShiprocketController::class, 'cancelShipment']);
     Route::get('/shipments/orders/{orderId}', [ShiprocketController::class, 'getOrder']);
     Route::get('/shipments/orders', [ShiprocketController::class, 'getAllOrders']);
@@ -57,7 +62,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/webhook', [WebhookController::class, 'webhook']);
 
 
-    // put your protected API routes here
+    Route::post('/queue', [ShiprocketController::class, 'demoQueue']);
+
+
+
+
+    // Delhivery
+
+    Route::get('/delhivery',[DelhiveryController::class, 'index']);
+
+
+
 });
 
 

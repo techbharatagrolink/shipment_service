@@ -41,4 +41,8 @@ return [
         'password' => env('SHIPROCKET_API_PASSWORD'),
     ],
 
+    'delhivery' => [
+        'api_key' => env('DELHIVERY_API_KEY'),
+    ],
+
 ];
