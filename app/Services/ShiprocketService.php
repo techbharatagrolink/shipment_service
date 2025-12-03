@@ -81,9 +81,16 @@ class ShiprocketService
 
     public function generateInvoice($orderData)
     {
+        //dd($orderData);
         $token = $this->authenticate();
         return Http::withToken($token)
             ->post("https://apiv2.shiprocket.in/v1/external/orders/print/invoice",$orderData);
+    }
+
+    public function generatePickup($orderData){
+        $token = $this->authenticate();
+        return Http::withToken($token)
+            ->post("https://apiv2.shiprocket.in/v1/external/courier/generate/pickup",$orderData);
     }
 
     public function createExchangeOrder(array $orderData)

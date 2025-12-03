@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/generateManifest', [ShiprocketController::class, 'generateManifest']);
     Route::post('/orders/generateLabel', [ShiprocketController::class, 'generateLabel']);
     Route::post('/orders/generateInvoice', [ShiprocketController::class, 'generateInvoice']);
+    Route::post('/orders/generatePickup', [ShiprocketController::class, 'generatePickup']);
 
     Route::get('/shipments/track/shipment/{shipmentId}', [ShiprocketController::class, 'trackShipment']);
     Route::get('/shipments/track/awb/{awb}', [ShiprocketController::class, 'trackShipmentAWB']);

@@ -59,19 +59,20 @@ class ShiprocketController extends Controller
 
 
         $response = $this->shiprocket->createOrder($validated);
-        dd($response->json());
+        //dd($response->json());
 
         if ($response->successful()) {
             $data = $response->json();
-            $shipment = Shipment::create([
-                'order_id' => $validated['order_id'],
-                'shipment_id' => $data['shipment_id'] ?? null,
-                'courier_name' => $data['courier_name'] ?? null,
-                'awb_code' => $data['awb_code'] ?? null,
-                'status' => $data['status'] ?? null,
-                'order_data' => $validated,
-            ]);
-            return response()->json($shipment, 201);
+//            $shipment = Shipment::create([
+//                'order_id' => $validated['order_id'],
+//                'shipment_id' => $data['shipment_id'] ?? null,
+//                'courier_name' => $data['courier_name'] ?? null,
+//                'awb_code' => $data['awb_code'] ?? null,
+//                'status' => $data['status'] ?? null,
+//                'order_data' => $validated,
+//                'shiprocket_order_id' => $data['order_id'] ?? null,
+//            ]);
+            return response()->json($data, 201);
         }
 
         return response()->json(['error' => 'Failed to create shipment', 'details' => $response->json()], 500);
@@ -259,14 +260,25 @@ class ShiprocketController extends Controller
 
     public function generateInvoice(Request $request)
     {
-        $validated = $request->validate([
-            //'ids' => 'required|array',
-        ]);
-        $response = $this->shiprocket->generateInvoice($validated);
+        $ids = $request->all();
+        //dd($ids);
+        $response = $this->shiprocket->generateInvoice($ids);
         if ($response->successful()) {
             return $response->json();
         }
         return response()->json(['error' => 'Failed to generate Invoice', 'details' => $response->json()], 400);
+    }
+
+    public function generatePickup(Request $request)
+    {
+        $validated = $request->validate([
+            'shipment_id' => 'required|array',
+        ]);
+        $response = $this->shiprocket->generatePickup($validated);
+        if ($response->successful()) {
+            return $response->json();
+        }
+        return response()->json(['error' => 'Failed to generate Pickup', 'details' => $response->json()], 400);
     }
 
     public function createExchangeOrder(Request $request)
