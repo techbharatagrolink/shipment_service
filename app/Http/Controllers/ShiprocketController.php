@@ -451,6 +451,27 @@ class ShiprocketController extends Controller
         }
         return response()->json(['error' => 'No Orders Found', 'details' => $response->json()], 200);
     }
+    /**
+     * @OA\Get(
+     *      path="/api/shipments/couriers",
+     *      operationId="getAllCouriers",
+     *      tags={"Shipments"},
+     *      summary="Get all couriers",
+     *      description="Returns list of all available couriers",
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *       ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     *      @OA\Response(
+     *          response=403,
+     *          description="Forbidden"
+     *      )
+     *     )
+     */
     public function getAllCouriers(){
         $response = $this->shiprocket->getAllCouriers();
         if ($response->successful()) {

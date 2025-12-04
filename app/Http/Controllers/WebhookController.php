@@ -18,7 +18,7 @@ class WebhookController extends Controller
         $response = Http::withToken($this->slack_token)
             ->post($this->slack_url, [
                 "channel" => "#tech",  // Your Slack channel ID
-                "text" => json_encode($request->all(), JSON_PRETTY_PRINT),
+                "text" => "received",
             ]);
         return $response->json();
     }
