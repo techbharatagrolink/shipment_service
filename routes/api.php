@@ -60,7 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-    Route::post('/webhook', [WebhookController::class, 'webhook']);
+
 
 
     Route::post('/queue', [ShiprocketController::class, 'demoQueue']);
@@ -107,4 +107,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-
+Route::post('/webhook', [WebhookController::class, 'webhook']);
