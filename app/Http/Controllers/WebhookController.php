@@ -15,10 +15,11 @@ class WebhookController extends Controller
     }
 
     public function webhook(Request $request){
+        $rawBody = $request->getContent();
         $response = Http::withToken($this->slack_token)
             ->post($this->slack_url, [
                 "channel" => "#tech",  // Your Slack channel ID
-                "text" => "received",
+                "text" => json_encode($rawBody),
             ]);
         return $response->json();
     }
