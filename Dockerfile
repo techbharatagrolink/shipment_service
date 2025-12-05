@@ -47,12 +47,14 @@ stderr_logfile=/var/log/supervisor/octane.err.log
 stdout_logfile=/var/log/supervisor/octane.out.log
 
 [program:queue]
-command=php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+command=/usr/local/bin/php /app/artisan queue:work --queue=high --sleep=1 --tries=3 --timeout=120
 directory=/app
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/supervisor/queue.err.log
-stdout_logfile=/var/log/supervisor/queue.out.log
+user=www-data
+redirect_stderr=true
+stdout_logfile=/dev/stdout
+stderr_logfile=/dev/stderr
 EOF
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
