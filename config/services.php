@@ -45,4 +45,8 @@ return [
         'api_key' => env('DELHIVERY_API_KEY'),
     ],
 
+    'aisensy' => [
+        'api_key' => env('AISENSY_API_KEY'),
+    ]
+
 ];
