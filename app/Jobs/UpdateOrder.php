@@ -25,18 +25,28 @@ class UpdateOrder implements ShouldQueue
         $this->rawData = $rawData;
     }
 
+    function cleanOrderId($orderId)
+    {
+        if (str_ends_with($orderId, '-C')) {
+            return substr($orderId, 0, -2); // remove last 2 chars
+        }
+
+        return $orderId;
+    }
+
     // Laravel will inject the service here automatically
     public function handle(ShiprocketService $shipRocketService,Whatsapp $whatsapp): void
     {
         $this->shipRocketService = $shipRocketService;
         $this->whatsapp = $whatsapp;
 
-        $order_id     = $this->rawData['order_id'] ?? null;
+        $order_id     = $this->cleanOrderId($this->rawData['order_id'])?? null;
         $sr_order_id     = $this->rawData['sr_order_id'] ?? null;
         $current_status  = $this->rawData['current_status'] ?? null;
         $shipment_status  = $this->rawData['shipment_status'] ?? null;
         $channel_id      = $this->rawData['channel_id'] ?? null;
 
+        //dd($order_id);
         // Get latest order info from Shiprocket API
         $current_order = $this->shipRocketService->getOrder(intval($sr_order_id)) ?? null;
 
