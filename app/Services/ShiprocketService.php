@@ -128,12 +128,18 @@ class ShiprocketService
         return Http::withToken($token)
             ->get("https://apiv2.shiprocket.in/v1/external/courier/track/awb/" . $awb);
     }
-     public function trackMultipleShipmentAWB(array $trackData)
+
+    public function trackMultipleShipmentAWB(array $trackData)
     {
-        $token = $this->authenticate();
-        return Http::withToken($token)
-            ->get("https://apiv2.shiprocket.in/v1/external/courier/track/awbs" ,$trackData);
+    $token = $this->authenticate();
+        \Log::info('Shiprocket bulk tracking API call:', $trackData);
+        $response = Http::withToken($token)
+        ->asJson()
+        ->post("https://apiv2.shiprocket.in/v1/external/courier/track/awbs", $trackData);
+        \Log::info('Shiprocket bulk tracking response status:', ['status' => $response->status()]);
+    return $response;
     }
+
     public function trackShipmentOrder(array $trackData)
     {
         $token = $this->authenticate();

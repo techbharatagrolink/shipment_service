@@ -398,15 +398,23 @@ class ShiprocketController extends Controller
         }
         return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
     }
-     public function trackMultipleShipmentAWB(Request $request)
+
+    public function trackMultipleShipmentAWB(Request $request)
     {  
-         $trackData = $request->all();
-        $response = $this->shiprocket->trackMultipleShipmentAWB($trackData);
-        if ($response->successful()) {
-            return response()->json($response->json());
-        }
-        return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
-     }
+    $request->validate([
+        'awbs' => 'required|array|min:1|max:50',
+        'awbs.*' => 'required|string'
+    ]);
+    
+    $trackData = $request->only(['awbs']);
+    \Log::info('Bulk tracking request:', $trackData);
+    $response = $this->shiprocket->trackMultipleShipmentAWB($trackData);
+    if ($response->successful()) {
+        return response()->json($response->json());
+    }
+    return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
+   }
+
     public function trackShipmentOrder(Request $request)
     {
         //dd($request);
