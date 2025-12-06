@@ -151,11 +151,18 @@ class ShiprocketService
         return Http::withToken($token)
             ->post('https://apiv2.shiprocket.in/v1/external/orders/cancel',$ids);
     }
-    public function getAllOrders(){
+    public function getAllOrders_old(){
         $token = $this->authenticate();
         return Http::withToken($token)
             ->get('https://apiv2.shiprocket.in/v1/external/orders');
     }
+    public function getAllOrders($params = [])
+    {
+    $token = $this->authenticate();
+    
+    return Http::withToken($token)
+        ->get('https://apiv2.shiprocket.in/v1/external/orders', $params);
+   }
     public function getOrder(string $orderId){
         $token = $this->authenticate();
         return Http::withToken($token)
