@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shipments/track/shipment/{shipmentId}', [ShiprocketController::class, 'trackShipment']);
     Route::get('/shipments/track/awb/{awb}', [ShiprocketController::class, 'trackShipmentAWB']);
     Route::get('/shipments/track/order', [ShiprocketController::class, 'trackShipmentOrder']);
+    Route::get('/shipments/track/awbs', [ShiprocketController::class, 'trackMultipleShipmentAWB']);
 
 
     Route::post('/shipments/cancel/', [ShiprocketController::class, 'cancelShipment']);
