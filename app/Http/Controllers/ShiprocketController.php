@@ -436,7 +436,7 @@ class ShiprocketController extends Controller
         }
         return response()->json(['error' => 'Cancelation failed', 'details' => $response->json()], 500);
     }
-    public function getAllOrders()
+    public function getAllOrders_old()
     {
         $response = $this->shiprocket->getAllOrders();
         if ($response->successful()) {
@@ -444,6 +444,22 @@ class ShiprocketController extends Controller
         }
         return response()->json(['error' => 'no Orders Found', 'details' => $response->json()], 200);
     }
+    public function getAllOrders(Request $request)
+    {
+    $params = $request->only([
+        'page', 'per_page', 'sort', 'sort_by', 'to', 'from',
+        'filter_by', 'filter', 'search', 'pickup_location',
+        'channel_id', 'fbs'
+    ]);
+    $params = array_filter($params, function($value) {
+        return $value !== null && $value !== '';
+    });
+    $response = $this->shiprocket->getAllOrders($params);
+    if ($response->successful()) {
+        return response()->json($response->json());
+    }
+    return response()->json(['error' => 'no Orders Found', 'details' => $response->json()], 200);
+   }
     public function getOrder($orderId){
         $response = $this->shiprocket->getOrder($orderId);
         if ($response->successful()) {
