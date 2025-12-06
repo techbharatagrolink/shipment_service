@@ -53,13 +53,17 @@ class UpdateOrder implements ShouldQueue
         $orders = DB::connection('mysql2')
             ->table('orders')
             ->join('order_product', 'orders.order_id', '=', 'order_product.order_id')
-            ->where('order_product.invoice_number', '=', $order_id)
-            ->limit(1)
-            ->get();
+            ->join('shipment_shiprocket', DB::raw("order_product.invoice_number COLLATE utf8mb4_unicode_ci"), '=', DB::raw("shipment_shiprocket.invoice_number COLLATE utf8mb4_unicode_ci"))
+            ->where(DB::raw("shipment_shiprocket.channel_order_id COLLATE utf8mb4_unicode_ci"), '=', $order_id)
+            ->select('orders.*', 'order_product.*', 'shipment_shiprocket.*')
+            ->first();
 
-        $customer_phone = $orders[0]->mobile;
-        $customer_name = $orders[0]->fullname;
-        $table_order_id = $orders[0]->order_id;
+
+        //dd($orders);
+
+        $customer_phone = $orders->mobile;
+        $customer_name = $orders->fullname;
+        $table_order_id = $orders->order_id;
 
         $templet_params = [$customer_name,$table_order_id,'Product unavailability'];
 
@@ -86,7 +90,7 @@ class UpdateOrder implements ShouldQueue
 
         $order_product = DB::connection('mysql2')
             ->table('order_product')
-            ->where('invoice_number', $order_id)  // or correct field
+            ->where('invoice_number', $orders->invoice_number)  // or correct field
             ->update(['status' => $current_status]);
 
         dump($order_product,$shipment);

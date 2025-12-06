@@ -109,3 +109,4 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/webhook', [WebhookController::class, 'webhook']);
+Route::post('/syncorder/{order_id}', [WebhookController::class, 'syncorder']);
