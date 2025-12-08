@@ -73,7 +73,12 @@ class SyncOrder implements ShouldQueue
         $order_product = DB::connection('mysql2')
             ->table('order_product')
             ->where('invoice_number', $invoice_number)  // or correct field
-            ->update(['status' => $order_data['data']['status']]);
+            ->update([
+                'status' => $order_data['data']['status'],
+                'tracking_id' => $awb ?? null,
+                'tracking_url' => $awb!='' ? "https://shiprocket.co/tracking/$awb" : null,
+                'print_label' => $label_url ?? null,
+            ]);
 
         \Log::info("db update queue: $shipment , $order_product");
         //return [$shipment,$order_product];
