@@ -38,8 +38,14 @@ class WebhookController extends Controller
         $channel_order_id = $order_data['data']['channel_order_id'];
         $shipment_id = $order_data['data']['shipments']['id'];
 
-        $pos = strrpos($channel_order_id, '-');
-        $invoice_number = substr($channel_order_id, 0, $pos);
+        $channel = $channel_order_id;
+        $parts = explode('-', $channel);
+        $lastPart = end($parts);
+        if (!ctype_digit($lastPart)) {
+            array_pop($parts);
+        }
+        $invoice_number = implode('-', $parts);
+
         $last_update_date = date('Y-m-d H:i:s',strtotime($order_data['data']['updated_at']));
         $awb = $order_data['data']['shipments']['awb'] ?? null;
 
@@ -48,7 +54,7 @@ class WebhookController extends Controller
         $label_url = $label['label_url'] ?? null;
 
 
-       // dd($shipment_id,$label_url);
+        //dd($shipment_id,$label_url,$invoice_number);
 
         $shipment = DB::connection('mysql2')
             ->table('shipment_shiprocket')
