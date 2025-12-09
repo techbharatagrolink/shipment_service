@@ -5,6 +5,7 @@ use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ShiprocketController;
+use App\Http\Controllers\DelhiveryWebhookController;
 Route::post('/login', \App\Http\Controllers\Api\Auth\LoginController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -109,4 +110,5 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/webhook', [WebhookController::class, 'webhook']);
+Route::post('/webhook/delhivery', [DelhiveryWebhookController::class, 'handle']);
 Route::post('/syncorder/{order_id}', [WebhookController::class, 'syncorder']);

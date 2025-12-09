@@ -26,12 +26,13 @@ class WebhookController extends Controller
     public function webhook(Request $request){
         $rawBody = json_decode($request->getContent(), true);
         UpdateOrder::dispatch($rawBody)->onQueue('high');
-        $response = Http::withToken($this->slack_token)
-            ->post($this->slack_url, [
-                "channel" => "#tech",  // Your Slack channel ID
-                "text" => json_encode($rawBody),
-            ]);
-        return $response->json();
+//        $response = Http::withToken($this->slack_token)
+//            ->post($this->slack_url, [
+//                "channel" => "#tech",  // Your Slack channel ID
+//                "text" => json_encode($rawBody),
+//            ]);
+//        return $response->json();
+        return response()->json(['message' => 'OK'], 200);
     }
 
     public function syncorder($order_id){
