@@ -8,6 +8,8 @@ use App\Jobs\ProcessDelhiveryWebhook;
 
 class DelhiveryWebhookController extends Controller
 {
+
+
     public function handle(Request $request)
     {
         $payload = $request->all();
@@ -17,6 +19,8 @@ class DelhiveryWebhookController extends Controller
 
         // Dispatch job for processing
         ProcessDelhiveryWebhook::dispatch($payload)->onQueue('high');
+
+
 
         // Respond fast (Delhivery requires 200)
         return response()->json(['message' => 'OK'], 200);
