@@ -16,51 +16,55 @@ class ProcessDelhiveryWebhook implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $payload;
+    protected $slackUrl;
+    protected $slackToken;
 
     public function __construct($payload)
     {
         $this->payload = $payload;
-        $this->slack_url = "https://slack.com/api/chat.postMessage";
-        $this->slack_token = env('SLACK_TOKEN');
+
+        // Proper DI-style values from env/config
+        $this->slackUrl   = config('services.slack.webhook_url', 'https://slack.com/api/chat.postMessage');
+        $this->slackToken = env('SLACK_TOKEN');
     }
 
     public function handle()
     {
+        // Send Slack log
+        $response_slack = Http::withToken($this->slackToken)
+            ->post($this->slackUrl, [
+                "channel" => "#tech",
+                "text"    => json_encode($this->payload),
+            ]);
 
-
-        $response_slack = Http::withToken($this->slack_token)
-            ->post($this->slack_url, [
-                "channel" => "#tech",  // Your Slack channel ID
-                "text" => json_encode($this->payload),
-        ]);
         Log::info("Processing Delhivery webhook", $this->payload);
-        Log::info("Delhivery webhook Slack Response",$response_slack);
-        // Expected Delhivery structure
+        Log::info("Delhivery webhook Slack Response", [
+            'slack_response' => $response_slack->json()
+        ]);
+
+        // Extract shipment data
         $shipment = $this->payload['Shipment'] ?? null;
         if (!$shipment) return;
 
-        $orderId     = $shipment['OrderNo']      ?? null;
-        $vendorId    = $shipment['VendorID']     ?? null;
-        $waybill     = $shipment['AWB']          ?? null;
-        $invoice     = $shipment['InvoiceNo']    ?? null;
+        $orderId  = $shipment['OrderNo'] ?? null;
+        $vendorId = $shipment['VendorID'] ?? null;
+        $waybill  = $shipment['AWB'] ?? null;
+        $invoice  = $shipment['InvoiceNo'] ?? null;
 
-        // Scan status info
-        $statusData  = $shipment['Status']       ?? [];
-        $status      = $statusData['Status']     ?? null;
+        // Status block
+        $statusData = $shipment['Status'] ?? [];
+        $status     = $statusData['Status'] ?? null;
 
         if (!$orderId || !$vendorId) {
             Log::warning("Delhivery webhook missing order/vendor id", $this->payload);
             return;
         }
 
-
-
-
-        // Update table
+        // Update DB (mysql2)
         DB::connection('mysql2')->table('shipment_delhivery')
             ->updateOrInsert(
                 [
-                    'order_id' => $orderId,
+                    'order_id'  => $orderId,
                     'vendor_id' => $vendorId
                 ],
                 [
@@ -74,10 +78,10 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             );
 
         Log::info("Delhivery shipment updated", [
-            'order_id' => $orderId,
+            'order_id'  => $orderId,
             'vendor_id' => $vendorId,
-            'status' => $status,
-            'payload' => $response->json(),
+            'status'    => $status,
+            'slack_response' => $response_slack->json()
         ]);
     }
 }
