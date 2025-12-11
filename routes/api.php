@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\DelhiveryController;
+use App\Http\Controllers\DelhiveryWebhookController;
+use App\Http\Controllers\ShiprocketController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ShiprocketController;
-use App\Http\Controllers\DelhiveryWebhookController;
+
 Route::post('/login', \App\Http\Controllers\Api\Auth\LoginController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -14,12 +15,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/orders/create', [ShiprocketController::class, 'createOrder']);
+    Route::post('/orders/update', [ShiprocketController::class, 'updateOrder']);
     Route::post('/orders/create/return', [ShiprocketController::class, 'createReturnOrder']);
     Route::post('/orders/return/edit', [ShiprocketController::class, 'editReturnOrder']);
     Route::get('/orders/return', [ShiprocketController::class, 'getAllReturnOrders']);
     Route::post('/orders/create/exchange', [ShiprocketController::class, 'createExchangeOrder']);
     Route::post('/orders/cancel', [ShiprocketController::class, 'cancelOrder']);
-
 
     Route::post('/orders/generateAWB', [ShiprocketController::class, 'generateAWB']);
     Route::post('/orders/generateManifest', [ShiprocketController::class, 'generateManifest']);
@@ -31,7 +32,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shipments/track/awb/{awb}', [ShiprocketController::class, 'trackShipmentAWB']);
     Route::get('/shipments/track/order', [ShiprocketController::class, 'trackShipmentOrder']);
     Route::post('/shipments/track/awbs', [ShiprocketController::class, 'trackMultipleShipmentAWB']);
-
 
     Route::post('/shipments/cancel/', [ShiprocketController::class, 'cancelShipment']);
     Route::get('/shipments/orders/{orderId}', [ShiprocketController::class, 'getOrder']);
@@ -47,11 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/wallet', [ShiprocketController::class, 'getWalletBalance']);
 
-
     Route::get('/products', [ShiprocketController::class, 'getAllProducts']);
     Route::get('/products/{product_id}', [ShiprocketController::class, 'getProductDetails']);
     Route::post('/products', [ShiprocketController::class, 'addNewProduct']);
-
 
     Route::post('/inventory', [ShiprocketController::class, 'getInventory']);
     Route::put('/inventory/{product_id}', [ShiprocketController::class, 'updateInventory']);
@@ -60,20 +58,39 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/discrepancy', [ShiprocketController::class, 'getDiscrepancy']);
 
-
-
-
-
-
     Route::post('/queue', [ShiprocketController::class, 'demoQueue']);
 
+    // ==========================================
+    // Delhivery - Orders
+    // ==========================================
+    Route::post('/delhivery/orders/create', [DelhiveryController::class, 'createOrder']);
+    Route::put('/delhivery/orders/edit/{waybill}', [DelhiveryController::class, 'editShipment']);
+    Route::delete('/delhivery/orders/cancel/{waybill}', [DelhiveryController::class, 'cancelShipment']);
 
+    // ==========================================
+    // Delhivery - Tracking
+    // ==========================================
+    Route::get('/delhivery/track/{waybill}', [DelhiveryController::class, 'trackShipment']);
+    Route::post('/delhivery/track/multiple', [DelhiveryController::class, 'trackMultipleShipments']);
 
+    // ==========================================
+    // Delhivery - Labels & Documents
+    // ==========================================
+    Route::get('/delhivery/label/{waybill}', [DelhiveryController::class, 'generateLabel']);
+    Route::get('/delhivery/waybill/{clientOrderId}', [DelhiveryController::class, 'fetchWaybill']);
 
-    // Delhivery
+    // ==========================================
+    // Delhivery - Pickup & Logistics
+    // ==========================================
+    Route::post('/delhivery/pickup/create', [DelhiveryController::class, 'createPickupRequest']);
+    Route::get('/delhivery/serviceability', [DelhiveryController::class, 'checkServiceability']);
+    Route::post('/delhivery/calculate-cost', [DelhiveryController::class, 'calculateShippingCost']);
+    Route::get('/delhivery/pincode-serviceability', [DelhiveryController::class, 'pincodeServiceability']);
 
-    Route::get('/delhivery',[DelhiveryController::class, 'index']);
-
+    // ==========================================
+    // Delhivery - NDR Management
+    // ==========================================
+    Route::put('/delhivery/ndr/update/{waybill}', [DelhiveryController::class, 'updateNDRShipment']);
 
     Route::get('/bench', function () {
         // heavy dummy work to test CPU & concurrency
@@ -93,19 +110,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sse', function () {
         return response()->stream(function () {
             for ($i = 1; $i <= 10; $i++) {
-                echo "data: " . json_encode(['tick' => $i]) . "\n\n";
+                echo 'data: '.json_encode(['tick' => $i])."\n\n";
                 if (ob_get_level() > 0) {
                     @ob_flush();
                 }
                 @flush();
                 sleep(2);
             }
-        },200,['Cache-Control' => 'no-store',
-            'Content-Type'  => 'text/event-stream',
-            'X-Accel-Buffering' => 'no',]);
+        }, 200, ['Cache-Control' => 'no-store',
+            'Content-Type' => 'text/event-stream',
+            'X-Accel-Buffering' => 'no', ]);
     });
-
-
 
 });
 

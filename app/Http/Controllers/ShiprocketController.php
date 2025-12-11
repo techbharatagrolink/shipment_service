@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessTask;
-use App\Mail\TestMail;
 use App\Models\Shipment;
 use App\Services\ShiprocketService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class ShiprocketController extends Controller
 {
@@ -20,7 +18,7 @@ class ShiprocketController extends Controller
 
     public function createOrder(Request $request)
     {
-       // dd($request);
+        // dd($request);
         $validated = $request->validate([
             'order_id' => 'required|string|unique:shipments,order_id',
             'order_date' => 'required|date_format:Y-m-d H:i',
@@ -57,25 +55,84 @@ class ShiprocketController extends Controller
             'weight' => 'required|numeric',
         ]);
 
-
         $response = $this->shiprocket->createOrder($validated);
-        //dd($response->json());
+        // dd($response->json());
 
         if ($response->successful()) {
             $data = $response->json();
-//            $shipment = Shipment::create([
-//                'order_id' => $validated['order_id'],
-//                'shipment_id' => $data['shipment_id'] ?? null,
-//                'courier_name' => $data['courier_name'] ?? null,
-//                'awb_code' => $data['awb_code'] ?? null,
-//                'status' => $data['status'] ?? null,
-//                'order_data' => $validated,
-//                'shiprocket_order_id' => $data['order_id'] ?? null,
-//            ]);
+
+            //            $shipment = Shipment::create([
+            //                'order_id' => $validated['order_id'],
+            //                'shipment_id' => $data['shipment_id'] ?? null,
+            //                'courier_name' => $data['courier_name'] ?? null,
+            //                'awb_code' => $data['awb_code'] ?? null,
+            //                'status' => $data['status'] ?? null,
+            //                'order_data' => $validated,
+            //                'shiprocket_order_id' => $data['order_id'] ?? null,
+            //            ]);
             return response()->json($data, 201);
         }
 
         return response()->json(['error' => 'Failed to create shipment', 'details' => $response->json()], 500);
+    }
+
+    public function updateOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'order_id' => 'required|string',
+            'order_date' => 'required|date_format:Y-m-d',
+            'pickup_location' => 'required|string',
+            'channel_id' => 'nullable|string',
+            'comment' => 'nullable|string',
+            'billing_customer_name' => 'required|string',
+            'billing_last_name' => 'nullable|string',
+            'billing_address' => 'required|string',
+            'billing_address_2' => 'nullable|string',
+            'billing_city' => 'required|string',
+            'billing_pincode' => 'required|integer',
+            'billing_state' => 'required|string',
+            'billing_country' => 'required|string',
+            'billing_email' => 'required|email',
+            'billing_phone' => 'required|string',
+            'shipping_is_billing' => 'required|boolean',
+            'shipping_customer_name' => 'nullable|string',
+            'shipping_last_name' => 'nullable|string',
+            'shipping_address' => 'nullable|string',
+            'shipping_address_2' => 'nullable|string',
+            'shipping_city' => 'nullable|string',
+            'shipping_pincode' => 'nullable|string',
+            'shipping_country' => 'nullable|string',
+            'shipping_state' => 'nullable|string',
+            'shipping_email' => 'nullable|email',
+            'shipping_phone' => 'nullable|string',
+            'is_document' => 'nullable|string|in:0,1',
+            'order_items' => 'required|array|min:1',
+            'order_items.*.name' => 'required|string',
+            'order_items.*.sku' => 'required|string',
+            'order_items.*.units' => 'required|integer',
+            'order_items.*.selling_price' => 'required|numeric',
+            'order_items.*.discount' => 'nullable|numeric',
+            'order_items.*.tax' => 'nullable|numeric',
+            'order_items.*.hsn' => 'nullable|numeric',
+            'payment_method' => 'required|string',
+            'shipping_charges' => 'nullable|numeric',
+            'giftwrap_charges' => 'nullable|numeric',
+            'transaction_charges' => 'nullable|numeric',
+            'total_discount' => 'nullable|numeric',
+            'sub_total' => 'required|numeric',
+            'length' => 'required|numeric',
+            'breadth' => 'required|numeric',
+            'height' => 'required|numeric',
+            'weight' => 'required|numeric',
+        ]);
+
+        $response = $this->shiprocket->updateOrder($validated);
+
+        if ($response->successful()) {
+            return response()->json($response->json(), 200);
+        }
+
+        return response()->json(['error' => 'Failed to update order', 'details' => $response->json()], 500);
     }
 
     public function createReturnOrder(Request $request)
@@ -136,11 +193,9 @@ class ShiprocketController extends Controller
             'order_items.*.qc_enable' => 'nullable|string|in:true,false',
 
             // CONDITIONAL VALIDATION WHEN qc_enable = true
-            'order_items.*.qc_product_name' =>
-                'required_if:order_items.*.qc_enable,true|string',
+            'order_items.*.qc_product_name' => 'required_if:order_items.*.qc_enable,true|string',
 
-            'order_items.*.qc_product_image' =>
-                'required_if:order_items.*.qc_enable,true|url',
+            'order_items.*.qc_product_image' => 'required_if:order_items.*.qc_enable,true|url',
 
             // QC additional optional fields
             'order_items.*.qc_color' => 'nullable|string|max:180',
@@ -154,8 +209,7 @@ class ShiprocketController extends Controller
             'order_items.*.qc_used_check' => 'nullable|boolean',
             'order_items.*.qc_sealtag_check' => 'nullable|boolean',
 
-            'order_items.*.qc_check_damaged_product' =>
-                'nullable|string|in:yes,no',
+            'order_items.*.qc_check_damaged_product' => 'nullable|string|in:yes,no',
 
             // ------------------------
             // PAYMENT & TOTAL
@@ -177,9 +231,9 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to create Return Order', 'details' => $response->json()], 500);
     }
-
 
     public function editReturnOrder(Request $request)
     {
@@ -191,10 +245,10 @@ class ShiprocketController extends Controller
             'action.*' => 'required|string|in:product_details,warehouse_address',
 
             // CONDITIONAL: required when action includes "product_details"
-            'length'  => 'required_if:action,product_details|numeric|min:0.5',
+            'length' => 'required_if:action,product_details|numeric|min:0.5',
             'breadth' => 'required_if:action,product_details|numeric|min:0.5',
-            'height'  => 'required_if:action,product_details|numeric|min:0.5',
-            'weight'  => 'required_if:action,product_details|numeric|min:0.01',
+            'height' => 'required_if:action,product_details|numeric|min:0.5',
+            'weight' => 'required_if:action,product_details|numeric|min:0.01',
 
             // CONDITIONAL: required when action includes "warehouse_address"
             'return_warehouse_id' => 'required_if:action,warehouse_address|integer',
@@ -204,8 +258,8 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
-        return response()->json(['error' => 'Failed to edit Return Order', 'details' => $response->json()], 500);
 
+        return response()->json(['error' => 'Failed to edit Return Order', 'details' => $response->json()], 500);
 
     }
 
@@ -216,21 +270,23 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to get all Return Orders', 'details' => $response->json()], 500);
     }
 
     public function generateAWB(Request $request)
     {
         $validated = $request->validate([
-           'shipment_id' => 'required|string|max:50',
-           'courier_id' => 'nullable|string|max:50',
-           'status' => 'nullable|string|max:50',
-           'is_return' => 'required|string|max:50',
+            'shipment_id' => 'required|string|max:50',
+            'courier_id' => 'nullable|string|max:50',
+            'status' => 'nullable|string|max:50',
+            'is_return' => 'required|string|max:50',
         ]);
         $response = $this->shiprocket->generateAWB($validated);
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to generate AWB', 'details' => $response->json()], 500);
     }
 
@@ -243,6 +299,7 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to generate Manifest', 'details' => $response->json()], 500);
     }
 
@@ -255,17 +312,19 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to generate Label', 'details' => $response->json()], 500);
     }
 
     public function generateInvoice(Request $request)
     {
         $ids = $request->all();
-        //dd($ids);
+        // dd($ids);
         $response = $this->shiprocket->generateInvoice($ids);
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to generate Invoice', 'details' => $response->json()], 400);
     }
 
@@ -278,6 +337,7 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to generate Pickup', 'details' => $response->json()], 400);
     }
 
@@ -287,73 +347,73 @@ class ShiprocketController extends Controller
             // --------------------------
             // BASIC EXCHANGE ORDER INFO
             // --------------------------
-            'exchange_order_id'         => 'required|string|max:100',
+            'exchange_order_id' => 'required|string|max:100',
             'seller_pickup_location_id' => 'required|string|max:100',
-            'seller_shipping_location_id'=> 'required|string|max:100',
-            'return_order_id'           => 'required|string|max:100',
+            'seller_shipping_location_id' => 'required|string|max:100',
+            'return_order_id' => 'required|string|max:100',
 
-            'order_date'                => 'required|date_format:Y-m-d',
-            'payment_method'            => 'required|string|in:prepaid,Prepaid,PREPAID',
+            'order_date' => 'required|date_format:Y-m-d',
+            'payment_method' => 'required|string|in:prepaid,Prepaid,PREPAID',
 
             // --------------------------
             // SHIPPING DETAILS (BUYER)
             // --------------------------
             'buyer_shipping_first_name' => 'required|string|max:150',
-            'buyer_shipping_last_name'  => 'nullable|string|max:150',
-            'buyer_shipping_email'      => 'required|email',
-            'buyer_shipping_address'    => 'required|string|max:255',
-            'buyer_shipping_address_2'  => 'nullable|string|max:255',
-            'buyer_shipping_city'       => 'required|string|max:150',
-            'buyer_shipping_state'      => 'required|string|max:150',
-            'buyer_shipping_country'    => 'required|string|max:150',
-            'buyer_shipping_pincode'    => 'required|string|max:20',
-            'buyer_shipping_phone'      => 'required|string|max:20',
+            'buyer_shipping_last_name' => 'nullable|string|max:150',
+            'buyer_shipping_email' => 'required|email',
+            'buyer_shipping_address' => 'required|string|max:255',
+            'buyer_shipping_address_2' => 'nullable|string|max:255',
+            'buyer_shipping_city' => 'required|string|max:150',
+            'buyer_shipping_state' => 'required|string|max:150',
+            'buyer_shipping_country' => 'required|string|max:150',
+            'buyer_shipping_pincode' => 'required|string|max:20',
+            'buyer_shipping_phone' => 'required|string|max:20',
 
             // --------------------------
             // PICKUP DETAILS (BUYER)
             // --------------------------
-            'buyer_pickup_first_name'   => 'required|string|max:150',
-            'buyer_pickup_last_name'    => 'nullable|string|max:150',
-            'buyer_pickup_email'        => 'required|email',
-            'buyer_pickup_address'      => 'required|string|max:255',
-            'buyer_pickup_address_2'    => 'nullable|string|max:255',
-            'buyer_pickup_city'         => 'required|string|max:150',
-            'buyer_pickup_state'        => 'required|string|max:150',
-            'buyer_pickup_country'      => 'required|string|max:150',
-            'buyer_pickup_pincode'      => 'required|string|max:20',
-            'buyer_pickup_phone'        => 'required|string|max:20',
+            'buyer_pickup_first_name' => 'required|string|max:150',
+            'buyer_pickup_last_name' => 'nullable|string|max:150',
+            'buyer_pickup_email' => 'required|email',
+            'buyer_pickup_address' => 'required|string|max:255',
+            'buyer_pickup_address_2' => 'nullable|string|max:255',
+            'buyer_pickup_city' => 'required|string|max:150',
+            'buyer_pickup_state' => 'required|string|max:150',
+            'buyer_pickup_country' => 'required|string|max:150',
+            'buyer_pickup_pincode' => 'required|string|max:20',
+            'buyer_pickup_phone' => 'required|string|max:20',
 
             // --------------------------
             // ORDER ITEMS ARRAY
             // --------------------------
-            'order_items'               => 'required|array|min:1',
+            'order_items' => 'required|array|min:1',
 
-            'order_items.*.name'              => 'required|string|max:255',
-            'order_items.*.selling_price'     => 'required|numeric|min:0',
-            'order_items.*.units'             => 'required|integer|min:1',
-            'order_items.*.hsn'               => 'nullable|string|max:50',
-            'order_items.*.sku'               => 'required|string|max:150',
-            'order_items.*.tax'               => 'nullable|numeric|min:0',
-            'order_items.*.discount'          => 'nullable|numeric|min:0',
+            'order_items.*.name' => 'required|string|max:255',
+            'order_items.*.selling_price' => 'required|numeric|min:0',
+            'order_items.*.units' => 'required|integer|min:1',
+            'order_items.*.hsn' => 'nullable|string|max:50',
+            'order_items.*.sku' => 'required|string|max:150',
+            'order_items.*.tax' => 'nullable|numeric|min:0',
+            'order_items.*.discount' => 'nullable|numeric|min:0',
 
-            'order_items.*.exchange_item_id'   => 'required|string|max:100',
+            'order_items.*.exchange_item_id' => 'required|string|max:100',
             'order_items.*.exchange_item_name' => 'required|string|max:255',
-            'order_items.*.exchange_item_sku'  => 'required|string|max:150',
+            'order_items.*.exchange_item_sku' => 'required|string|max:150',
 
             // --------------------------
             // PAYMENT TOTALS
             // --------------------------
-            'sub_total'               => 'required|numeric|min:0',
-            'shipping_charges'        => 'nullable|numeric|min:0',
-            'giftwrap_charges'        => 'nullable|numeric|min:0',
-            'total_discount'          => 'nullable|numeric|min:0',
-            'transaction_charges'     => 'nullable|numeric|min:0',
+            'sub_total' => 'required|numeric|min:0',
+            'shipping_charges' => 'nullable|numeric|min:0',
+            'giftwrap_charges' => 'nullable|numeric|min:0',
+            'total_discount' => 'nullable|numeric|min:0',
+            'transaction_charges' => 'nullable|numeric|min:0',
 
             // --------------------------
             // RETURN PACKAGE DIMENSIONS
             // --------------------------
             'return_length' => 'required|numeric|min:0.1',
-            'return_breadth'=> 'required|numeric|min:0.1',
+            'return_breadth' => 'required|numeric|min:0.1',
             'return_height' => 'required|numeric|min:0.1',
             'return_weight' => 'required|numeric|min:0.01',
 
@@ -361,7 +421,7 @@ class ShiprocketController extends Controller
             // EXCHANGE PACKAGE DIMENSIONS
             // --------------------------
             'exchange_length' => 'required|numeric|min:0.1',
-            'exchange_breadth'=> 'required|numeric|min:0.1',
+            'exchange_breadth' => 'required|numeric|min:0.1',
             'exchange_height' => 'required|numeric|min:0.1',
             'exchange_weight' => 'required|numeric|min:0.01',
 
@@ -375,9 +435,9 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return $response->json();
         }
+
         return response()->json(['error' => 'Failed to create exchange order', 'details' => $response->json()], 500);
     }
-
 
     public function trackShipment($shipmentId)
     {
@@ -396,40 +456,44 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
     }
 
     public function trackMultipleShipmentAWB(Request $request)
-    {  
-    $request->validate([
-        'awbs' => 'required|array|min:1|max:50',
-        'awbs.*' => 'required|string'
-    ]);
-    
-    $trackData = $request->only(['awbs']);
-    \Log::info('Bulk tracking request:', $trackData);
-    $response = $this->shiprocket->trackMultipleShipmentAWB($trackData);
-    if ($response->successful()) {
-        return response()->json($response->json());
+    {
+        $request->validate([
+            'awbs' => 'required|array|min:1|max:50',
+            'awbs.*' => 'required|string',
+        ]);
+
+        $trackData = $request->only(['awbs']);
+        \Log::info('Bulk tracking request:', $trackData);
+        $response = $this->shiprocket->trackMultipleShipmentAWB($trackData);
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+
+        return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
     }
-    return response()->json(['error' => 'Tracking failed by AWB', 'details' => $response->json()], 500);
-   }
 
     public function trackShipmentOrder(Request $request)
     {
-        //dd($request);
+        // dd($request);
         $trackData = $request->all();
 
         $response = $this->shiprocket->trackShipmentOrder($trackData);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Tracking failed By Order', 'details' => $response->json()], 500);
     }
+
     public function cancelShipment(Request $request)
     {
         $validated = $request->validate([
-           'awbs' => 'required|array|min:1',
+            'awbs' => 'required|array|min:1',
         ]);
         $response = $this->shiprocket->cancelShipment($validated);
 
@@ -443,46 +507,55 @@ class ShiprocketController extends Controller
     public function cancelOrder(Request $request)
     {
         $validated = $request->validate([
-            //'ids' => 'required|array|min:1',
+            // 'ids' => 'required|array|min:1',
         ]);
-        //dd($request->all());
+        // dd($request->all());
         $response = $this->shiprocket->cancelOrders($request->all());
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Cancelation failed', 'details' => $response->json()], 500);
     }
+
     public function getAllOrders_old()
     {
         $response = $this->shiprocket->getAllOrders();
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'no Orders Found', 'details' => $response->json()], 200);
     }
+
     public function getAllOrders(Request $request)
     {
-    $params = $request->only([
-        'page', 'per_page', 'sort', 'sort_by', 'to', 'from',
-        'filter_by', 'filter', 'search', 'pickup_location',
-        'channel_id', 'fbs'
-    ]);
-    $params = array_filter($params, function($value) {
-        return $value !== null && $value !== '';
-    });
-    $response = $this->shiprocket->getAllOrders($params);
-    if ($response->successful()) {
-        return response()->json($response->json());
+        $params = $request->only([
+            'page', 'per_page', 'sort', 'sort_by', 'to', 'from',
+            'filter_by', 'filter', 'search', 'pickup_location',
+            'channel_id', 'fbs',
+        ]);
+        $params = array_filter($params, function ($value) {
+            return $value !== null && $value !== '';
+        });
+        $response = $this->shiprocket->getAllOrders($params);
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+
+        return response()->json(['error' => 'no Orders Found', 'details' => $response->json()], 200);
     }
-    return response()->json(['error' => 'no Orders Found', 'details' => $response->json()], 200);
-   }
-    public function getOrder($orderId){
+
+    public function getOrder($orderId)
+    {
         $response = $this->shiprocket->getOrder($orderId);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'No Orders Found', 'details' => $response->json()], 200);
     }
+
     /**
      * @OA\Get(
      *      path="/api/shipments/couriers",
@@ -490,6 +563,7 @@ class ShiprocketController extends Controller
      *      tags={"Shipments"},
      *      summary="Get all couriers",
      *      description="Returns list of all available couriers",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
@@ -504,20 +578,25 @@ class ShiprocketController extends Controller
      *      )
      *     )
      */
-    public function getAllCouriers(){
+    public function getAllCouriers()
+    {
         $response = $this->shiprocket->getAllCouriers();
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'no Couriers Found', 'details' => $response->json()], 200);
     }
-    public function serviceability(){
+
+    public function serviceability()
+    {
         $shipmentData = request()->all();
         $response = $this->shiprocket->serviceability($shipmentData);
-        //dd($response);
+        // dd($response);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'no Service ability Found', 'details' => $response->json()], 200);
     }
 
@@ -621,6 +700,7 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To create', 'details' => $response->json()], 200);
     }
 
@@ -629,89 +709,92 @@ class ShiprocketController extends Controller
         $validated = $request->validate([
 
             // --- BASIC ORDER INFO ---
-            'order_id'               => 'required|string|max:50',
-            'order_date'             => 'required|date_format:Y-m-d',
-            'channel_id'             => 'nullable|integer',
+            'order_id' => 'required|string|max:50',
+            'order_date' => 'required|date_format:Y-m-d',
+            'channel_id' => 'nullable|integer',
 
             // --- PICKUP DETAILS ---
-            'pickup_customer_name'   => 'required|string',
-            'pickup_last_name'       => 'nullable|string',
-            'company_name'           => 'nullable|string',
+            'pickup_customer_name' => 'required|string',
+            'pickup_last_name' => 'nullable|string',
+            'company_name' => 'nullable|string',
 
-            'pickup_address'         => 'required|string',
-            'pickup_address_2'       => 'nullable|string',
-            'pickup_city'            => 'required|string',
-            'pickup_state'           => 'required|string',
-            'pickup_country'         => 'required|string',
-            'pickup_pincode'         => 'required|integer',
+            'pickup_address' => 'required|string',
+            'pickup_address_2' => 'nullable|string',
+            'pickup_city' => 'required|string',
+            'pickup_state' => 'required|string',
+            'pickup_country' => 'required|string',
+            'pickup_pincode' => 'required|integer',
 
-            'pickup_email'           => 'required|email',
-            'pickup_phone'           => 'required|string',
-            'pickup_isd_code'        => 'nullable|string',
+            'pickup_email' => 'required|email',
+            'pickup_phone' => 'required|string',
+            'pickup_isd_code' => 'nullable|string',
 
             // --- SHIPPING DETAILS ---
             'shipping_customer_name' => 'required|string',
-            'shipping_last_name'     => 'nullable|string',
-            'shipping_address'       => 'required|string',
-            'shipping_address_2'     => 'nullable|string',
-            'shipping_city'          => 'required|string',
-            'shipping_state'         => 'required|string',
-            'shipping_country'       => 'required|string',
-            'shipping_pincode'       => 'required|integer',
+            'shipping_last_name' => 'nullable|string',
+            'shipping_address' => 'required|string',
+            'shipping_address_2' => 'nullable|string',
+            'shipping_city' => 'required|string',
+            'shipping_state' => 'required|string',
+            'shipping_country' => 'required|string',
+            'shipping_pincode' => 'required|integer',
 
-            'shipping_email'         => 'required|email',
-            'shipping_phone'         => 'required|integer',
-            'shipping_isd_code'      => 'nullable|string',
+            'shipping_email' => 'required|email',
+            'shipping_phone' => 'required|integer',
+            'shipping_isd_code' => 'nullable|string',
 
             // --- ORDER ITEMS (ARRAY) ---
-            'order_items'            => 'required|array|min:1',
-            'order_items.*.name'     => 'required|string',
-            'order_items.*.sku'      => 'required|string',
-            'order_items.*.units'    => 'required|integer|min:1',
+            'order_items' => 'required|array|min:1',
+            'order_items.*.name' => 'required|string',
+            'order_items.*.sku' => 'required|string',
+            'order_items.*.units' => 'required|integer|min:1',
             'order_items.*.selling_price' => 'required|integer|min:0',
-            'order_items.*.discount'       => 'nullable|integer|min:0',
-            'order_items.*.hsn'            => 'nullable|string',
+            'order_items.*.discount' => 'nullable|integer|min:0',
+            'order_items.*.hsn' => 'nullable|string',
 
             // QC RULES
-            'order_items.*.qc_enable'        => 'nullable|in:TRUE,FALSE,True,False,true,false',
-            'order_items.*.qc_color'         => 'nullable|string|max:180',
-            'order_items.*.qc_brand'         => 'nullable|string|max:255',
-            'order_items.*.qc_serial_no'     => 'nullable|string|max:255',
-            'order_items.*.qc_ean_barcode'   => 'nullable|string|max:255',
-            'order_items.*.qc_size'          => 'nullable|string|max:180',
-            'order_items.*.qc_product_imei'  => 'nullable|string|max:255',
+            'order_items.*.qc_enable' => 'nullable|in:TRUE,FALSE,True,False,true,false',
+            'order_items.*.qc_color' => 'nullable|string|max:180',
+            'order_items.*.qc_brand' => 'nullable|string|max:255',
+            'order_items.*.qc_serial_no' => 'nullable|string|max:255',
+            'order_items.*.qc_ean_barcode' => 'nullable|string|max:255',
+            'order_items.*.qc_size' => 'nullable|string|max:180',
+            'order_items.*.qc_product_imei' => 'nullable|string|max:255',
 
             // CONDITIONAL FIELDS IF qc_enable = TRUE
-            'order_items.*.qc_product_name'  => 'required_if:order_items.*.qc_enable,TRUE|string|max:255',
+            'order_items.*.qc_product_name' => 'required_if:order_items.*.qc_enable,TRUE|string|max:255',
             'order_items.*.qc_product_image' => 'required_if:order_items.*.qc_enable,TRUE|url|max:255',
 
             // --- PAYMENT ---
-            'payment_method'         => 'required|string|in:COD,Prepaid',
-            'total_discount'         => 'nullable|string',
-            'sub_total'              => 'required|integer|min:0',
+            'payment_method' => 'required|string|in:COD,Prepaid',
+            'total_discount' => 'nullable|string',
+            'sub_total' => 'required|integer|min:0',
 
             // --- PACKAGE DIMENSIONS ---
-            'length'                 => 'required|integer|min:1',
-            'breadth'                => 'required|integer|min:1',
-            'height'                 => 'required|integer|min:1',
-            'weight'                 => 'required|integer|min:1',
+            'length' => 'required|integer|min:1',
+            'breadth' => 'required|integer|min:1',
+            'height' => 'required|integer|min:1',
+            'weight' => 'required|integer|min:1',
 
             // --- PICKUP REQUEST ---
-            'request_pickup'         => 'nullable|boolean',
+            'request_pickup' => 'nullable|boolean',
         ]);
 
         $response = $this->shiprocket->createReturnShipment($validated);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To create Return Shipment', 'details' => $response->json()], 200);
     }
 
-    public function getAllPickup(){
+    public function getAllPickup()
+    {
         $response = $this->shiprocket->getAllPickup();
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
 
@@ -742,16 +825,20 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To create', 'details' => $response->json()], 200);
     }
 
-    public function getWalletBalance(){
+    public function getWalletBalance()
+    {
         $response = $this->shiprocket->getWalletBalance();
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
+
     public function getAllProducts(Request $request)
     {
         $validated = $request->validate([
@@ -766,14 +853,17 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
 
-    public function getProductDetails($product_id){
+    public function getProductDetails($product_id)
+    {
         $response = $this->shiprocket->getProduct($product_id);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
 
@@ -825,42 +915,48 @@ class ShiprocketController extends Controller
         $response = $this->shiprocket->addNewProduct($validated);
 
         if ($response->successful()) {
-            return response()->json(['message'=>'Product Created' ,'details' =>$response->json()]);
+            return response()->json(['message' => 'Product Created', 'details' => $response->json()]);
         }
 
         return response()->json([
             'error' => 'Failed To create',
-            'details' => $response->json()
+            'details' => $response->json(),
         ], 200);
     }
 
-    public function getInventory(){
+    public function getInventory()
+    {
         $filterData = request()->all();
         $response = $this->shiprocket->getInventory($filterData);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
 
-    public function updateInventory($product_id,Request $request){
+    public function updateInventory($product_id, Request $request)
+    {
         $validated = $request->validate([
             'quantity' => 'required|integer',
             'action' => 'required|string',
         ]);
-        $response = $this->shiprocket->updateInventory($product_id,$validated);
+        $response = $this->shiprocket->updateInventory($product_id, $validated);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Update', 'details' => $response->json()], 200);
     }
 
-    public function getStatement(){
+    public function getStatement()
+    {
         $filterData = request()->all();
         $response = $this->shiprocket->getStatement($filterData);
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
 
@@ -871,6 +967,7 @@ class ShiprocketController extends Controller
         if ($response->successful()) {
             return response()->json($response->json());
         }
+
         return response()->json(['error' => 'Failed To Fetch', 'details' => $response->json()], 200);
     }
 
@@ -878,7 +975,7 @@ class ShiprocketController extends Controller
     {
 
         ProcessTask::dispatch()->onQueue('high')->withoutDelay();
+
         return response()->json(['msg' => 'put to Queue'], 200);
     }
-
 }
