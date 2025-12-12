@@ -47,6 +47,11 @@ return [
 
     'aisensy' => [
         'api_key' => env('AISENSY_API_KEY'),
-    ]
+    ],
+
+    'meta' => [
+        'access_token' => env('META_ACCESS_TOKEN'),
+        'catalog_id' => env('META_CATALOG_ID'),
+    ],
 
 ];

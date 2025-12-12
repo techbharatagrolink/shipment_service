@@ -22,7 +22,8 @@ RUN install-php-extensions \
 
 # Copy app
 COPY --from=composer_build /app /app
-COPY --from=frontend_build /app/public /app/public
+# Copy built frontend assets (only /public/build directory)
+COPY --from=frontend_build /app/public/build /app/public/build
 
 # Fix ALL permissions
 RUN mkdir -p /data/caddy /config/caddy /var/log/supervisor \

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DelhiveryController;
 use App\Http\Controllers\DelhiveryWebhookController;
+use App\Http\Controllers\MetaCatalogController;
 use App\Http\Controllers\ShiprocketController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
@@ -91,6 +92,36 @@ Route::middleware('auth:sanctum')->group(function () {
     // Delhivery - NDR Management
     // ==========================================
     Route::put('/delhivery/ndr/update/{waybill}', [DelhiveryController::class, 'updateNDRShipment']);
+
+    // ==========================================
+    // Meta Catalog - Catalog Management
+    // ==========================================
+    Route::get('/meta-catalog/catalog', [MetaCatalogController::class, 'getCatalog']);
+    Route::put('/meta-catalog/catalog', [MetaCatalogController::class, 'updateCatalog']);
+
+    // ==========================================
+    // Meta Catalog - Product Management
+    // ==========================================
+    Route::get('/meta-catalog/products', [MetaCatalogController::class, 'listProducts']);
+    Route::post('/meta-catalog/products', [MetaCatalogController::class, 'createProduct']);
+    Route::get('/meta-catalog/products/{productId}', [MetaCatalogController::class, 'getProduct']);
+    Route::put('/meta-catalog/products/{productId}', [MetaCatalogController::class, 'updateProduct']);
+    Route::delete('/meta-catalog/products/{productId}', [MetaCatalogController::class, 'deleteProduct']);
+
+    // ==========================================
+    // Meta Catalog - Batch Operations
+    // ==========================================
+    Route::post('/meta-catalog/products/batch', [MetaCatalogController::class, 'batchCreateProducts']);
+    Route::put('/meta-catalog/products/batch', [MetaCatalogController::class, 'batchUpdateProducts']);
+    Route::delete('/meta-catalog/products/batch', [MetaCatalogController::class, 'batchDeleteProducts']);
+    Route::post('/meta-catalog/batch/operations', [MetaCatalogController::class, 'batchOperations']);
+
+    // ==========================================
+    // Meta Catalog - Product Sets
+    // ==========================================
+    Route::post('/meta-catalog/product-sets', [MetaCatalogController::class, 'createProductSet']);
+    Route::put('/meta-catalog/product-sets/{setId}', [MetaCatalogController::class, 'updateProductSet']);
+    Route::delete('/meta-catalog/product-sets/{setId}', [MetaCatalogController::class, 'deleteProductSet']);
 
     Route::get('/bench', function () {
         // heavy dummy work to test CPU & concurrency
