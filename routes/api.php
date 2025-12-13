@@ -123,6 +123,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/meta-catalog/product-sets/{setId}', [MetaCatalogController::class, 'updateProductSet']);
     Route::delete('/meta-catalog/product-sets/{setId}', [MetaCatalogController::class, 'deleteProductSet']);
 
+
+    Route::post('/upload', [WebhookController::class, 'uploadToR2']);
+
     Route::get('/bench', function () {
         // heavy dummy work to test CPU & concurrency
         $sum = 0;

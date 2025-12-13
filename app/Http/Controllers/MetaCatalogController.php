@@ -61,16 +61,15 @@ class MetaCatalogController extends Controller
     public function createProduct(Request $request)
     {
         $validated = $request->validate([
-            'retailer_id' => 'required|string|max:100',
-            'name' => 'required|string|max:255',
+            'id' => 'required|string|max:100',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:5000',
             'price' => 'required|numeric|min:0',
-            'currency' => 'required|string|size:3',
             'availability' => 'required|string|in:in stock,out of stock,preorder,available for order,discontinued',
             'condition' => 'required|string|in:new,refurbished,used',
             'brand' => 'nullable|string|max:100',
-            'url' => 'required|url|max:1024',
-            'image_url' => 'required|url|max:1024',
+            'link' => 'required|url|max:1024',
+            'image' => 'required|array',
             'additional_image_urls' => 'nullable|array',
             'additional_image_urls.*' => 'url|max:1024',
             'custom_label_0' => 'nullable|string|max:100',
