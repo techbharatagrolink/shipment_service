@@ -48,7 +48,7 @@ stderr_logfile=/var/log/supervisor/octane.err.log
 stdout_logfile=/var/log/supervisor/octane.out.log
 
 [program:queue]
-command=/usr/local/bin/php /app/artisan queue:work --queue=high --sleep=1 --tries=3 --timeout=120
+command=/usr/local/bin/php /app/artisan queue:work --queue=high,low --sleep=1 --tries=3 --timeout=120
 directory=/app
 autostart=true
 autorestart=true
