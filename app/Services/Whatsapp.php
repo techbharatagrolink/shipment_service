@@ -19,14 +19,23 @@ class Whatsapp
         $api_url = 'https://backend.aisensy.com/campaign/t1/api/v2';
         $api_key = $this->api_key;
 
+        if ($template_params[0]=='file'){
+            $params_file = array(
+                $template_params[1],
+                $template_params[2],
+            );
+        }
         $data = [
             "apiKey" => $api_key,
             "campaignName" => $campaign_name,
             "destination" => $number,
             "userName" => "Agrolink Manufacturing Private Limited",
-            "templateParams" => $template_params,
+            "templateParams" => $params_file ?? $template_params,
             "source" => "new-landing-page form",
-            "media" => new stdClass(),
+            "media" => (object) [
+                "url" => $template_params[3],
+                "filename" => $template_params[4]
+            ],
             "buttons" => [],
             "carouselCards" => [],
             "location" => new stdClass(),

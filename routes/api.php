@@ -6,7 +6,11 @@ use App\Http\Controllers\MetaCatalogController;
 use App\Http\Controllers\ShiprocketController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use Laravel\Octane\Facades\Octane;
+use Illuminate\Support\Facades\Cache;
 
 Route::post('/login', \App\Http\Controllers\Api\Auth\LoginController::class);
 
@@ -126,38 +130,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/upload', [WebhookController::class, 'uploadToR2']);
 
-    Route::get('/bench', function () {
-        // heavy dummy work to test CPU & concurrency
-        $sum = 0;
-        for ($i = 0; $i < 200000; $i++) {
-            $sum += $i;
-        }
 
-        return [
-            'status' => 'ok',
-            'worker' => getmypid(),
-            'sum' => $sum,
-            'timestamp' => microtime(true),
-        ];
-    });
 
-    Route::get('/sse', function () {
-        return response()->stream(function () {
-            for ($i = 1; $i <= 10; $i++) {
-                echo 'data: '.json_encode(['tick' => $i])."\n\n";
-                if (ob_get_level() > 0) {
-                    @ob_flush();
-                }
-                @flush();
-                sleep(2);
-            }
-        }, 200, ['Cache-Control' => 'no-store',
-            'Content-Type' => 'text/event-stream',
-            'X-Accel-Buffering' => 'no', ]);
-    });
+
 
 });
 
 Route::post('/webhook', [WebhookController::class, 'webhook']);
 Route::post('/webhook/delhivery', [DelhiveryWebhookController::class, 'handle']);
 Route::post('/syncorder/{order_id}', [WebhookController::class, 'syncorder']);
+
+
+
+

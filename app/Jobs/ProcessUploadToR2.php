@@ -2,6 +2,7 @@
 namespace App\Jobs;
 
 use App\Services\CloudFlareService;
+use App\Services\Whatsapp;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class ProcessUploadToR2 implements ShouldQueue
         $this->order_id = $order_id;
     }
 
-    public function handle(CloudFlareService $cloudFlareService): void
+    public function handle(CloudFlareService $cloudFlareService,Whatsapp $whatsapp): void
     {
         $localPath = Storage::path($this->storedPath);
 
@@ -31,12 +32,24 @@ class ProcessUploadToR2 implements ShouldQueue
             'invoices/' . $this->filename
         );
 
+        $user_data = DB::connection('mysql2')->table('orders')
+            ->where('order_id', $this->order_id)->first();
+
         DB::connection('mysql2')->table('orders')
             ->where('order_id', $this->order_id)
             ->update([
                 'invoice_pdf' => $result
             ]);
 
+        $wp_res =$whatsapp->send($user_data->mobile,'customer_invoice',[
+            'file',
+            $user_data->fullname,
+            $this->order_id,
+            $result,
+            $this->filename
+        ]);
+
+        \Log::info("wp res : $wp_res");
         // ✅ cleanup temp file
         Storage::delete($this->storedPath);
     }
