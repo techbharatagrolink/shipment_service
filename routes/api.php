@@ -134,6 +134,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+
+    Route::get('/invoice/generate/{order_id}', [\App\Http\Controllers\InvoiceController::class, 'generateInvoice']);
 });
 
 Route::post('/webhook', [WebhookController::class, 'webhook']);
