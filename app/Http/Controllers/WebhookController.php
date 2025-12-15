@@ -73,7 +73,7 @@ class WebhookController extends Controller
             $storedPath,
             $filename,
             $order_id,
-        )->onQueue('test');
+        )->onQueue('low');
 
         return response()->json([
             'success' => true,
