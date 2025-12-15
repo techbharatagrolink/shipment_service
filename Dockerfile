@@ -1,7 +1,7 @@
 FROM composer:2 AS composer_build
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-scripts
+RUN composer install --no-dev --prefer-dist --no-scripts --ignore-platform-reqs
 COPY . .
 RUN composer dump-autoload --optimize && \
     php artisan route:cache && \
