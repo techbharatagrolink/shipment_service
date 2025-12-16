@@ -143,5 +143,8 @@ Route::post('/webhook/delhivery', [DelhiveryWebhookController::class, 'handle'])
 Route::post('/syncorder/{order_id}', [WebhookController::class, 'syncorder']);
 
 
+Route::get('/test-helper', function () {
+    return normalizeShipmentStatus('pickup booked');
+});
 
 

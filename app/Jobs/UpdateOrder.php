@@ -43,7 +43,7 @@ class UpdateOrder implements ShouldQueue
 
         $order_id = $this->cleanOrderId($this->rawData['order_id']) ?? null;
         $sr_order_id = $this->rawData['sr_order_id'] ?? null;
-        $current_status = $this->rawData['current_status'] ?? null;
+        $current_status = normalizeShipmentStatus($this->rawData['current_status']) ?? null;
         $shipment_status = $this->rawData['shipment_status'] ?? null;
         $channel_id = $this->rawData['channel_id'] ?? null;
 
