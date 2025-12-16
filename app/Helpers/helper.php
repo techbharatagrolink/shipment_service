@@ -24,7 +24,7 @@ if (!function_exists("normalizeShipmentStatus")) {
             'QC FAILED',
             'SELF FULFILLED',
         ])) {
-            return 'PENDING_PICKUP';
+            return 'Pending Pickup';
         }
 
         /* ---------------- RTO ---------------- */
@@ -42,7 +42,7 @@ if (!function_exists("normalizeShipmentStatus")) {
                 'FULFILLED',
             ])
         ) {
-            return 'DELIVERED';
+            return 'Delivered';
         }
 
         /* ---------------- CANCELLED ---------------- */
@@ -75,7 +75,7 @@ if (!function_exists("normalizeShipmentStatus")) {
             str_contains($status, 'CUSTOM CLEARED') ||
             str_contains($status, 'REACHED')
         ) {
-            return 'IN_TRANSIT';
+            return 'In Transit';
         }
 
         /* ---------------- FALLBACK ---------------- */
