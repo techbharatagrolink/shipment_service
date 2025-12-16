@@ -79,7 +79,7 @@ if (!function_exists("normalizeShipmentStatus")) {
         }
 
         /* ---------------- FALLBACK ---------------- */
-        return 'PENDING_PICKUP';
+        return $status;
     }
 
 }
