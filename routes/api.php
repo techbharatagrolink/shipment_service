@@ -110,7 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/meta-catalog/products', [MetaCatalogController::class, 'createProduct']);
     Route::get('/meta-catalog/products/{productId}', [MetaCatalogController::class, 'getProduct']);
     Route::put('/meta-catalog/products/{productId}', [MetaCatalogController::class, 'updateProduct']);
-    Route::delete('/meta-catalog/products/{productId}', [MetaCatalogController::class, 'deleteProduct']);
+    Route::delete('/meta-catalo§g/products/{productId}', [MetaCatalogController::class, 'deleteProduct']);
 
     // ==========================================
     // Meta Catalog - Batch Operations
@@ -141,6 +141,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/webhook', [WebhookController::class, 'webhook']);
 Route::post('/webhook/delhivery', [DelhiveryWebhookController::class, 'handle']);
 Route::post('/syncorder/{order_id}', [WebhookController::class, 'syncorder']);
+Route::post('/syncAllOrder', [WebhookController::class, 'syncAllOrder']);
 
 
 

@@ -33,6 +33,7 @@ class SyncOrder implements ShouldQueue
         $this->shiprocket = $shipRocketService;
         $order_id = $this->order_id;
         $order_data = $this->shiprocket->getOrder($order_id)->json();
+        //dd($order_data);
         $channel_order_id = $order_data['data']['channel_order_id'];
         $shipment_id = $order_data['data']['shipments']['id'];
 
@@ -56,7 +57,7 @@ class SyncOrder implements ShouldQueue
 
         $shipment = DB::connection('mysql2')
             ->table('shipment_shiprocket')
-            ->where('channel_order_id', $order_id)
+            ->where('channel_order_id', $channel_order_id)
             ->update(
                 [
                     'status' => $order_data['data']['status'],
@@ -72,7 +73,7 @@ class SyncOrder implements ShouldQueue
 
         $order_product = DB::connection('mysql2')
             ->table('order_product')
-            ->where('invoice_number', $invoice_number)  // or correct field
+            ->where('invoice_number', $channel_order_id)  // or correct field
             ->update([
                 'status' => $order_data['data']['status'],
                 'tracking_id' => $awb ?? null,
