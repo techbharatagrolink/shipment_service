@@ -34,7 +34,7 @@ class WebhookController extends Controller
     }
 
     public function syncorder($order_id){
-        SyncOrder::dispatch($order_id)->onQueue('test23');
+        SyncOrder::dispatch($order_id)->onQueue('high');
         return [
             'success' => true,
             'message' => 'Order has been queued for synced',
@@ -47,7 +47,7 @@ class WebhookController extends Controller
     public function syncAllOrder(){
         $all_orders = DB::connection('mysql2')->table('shipment_shiprocket')->get('order_id');
         foreach($all_orders as $order){
-            SyncOrder::dispatch($order->order_id)->onQueue('high');
+            SyncOrder::dispatch($order->order_id)->onQueue('test23');
         }
         return json_encode(['success' => true, 'message' => 'Orders have been queued for synced']);
     }

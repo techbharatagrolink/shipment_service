@@ -68,7 +68,7 @@ class SyncOrder implements ShouldQueue
                     'updated_at' => $last_update_date,
                     'invoice_url' => $order_data['data']['shipments']['invoice_link'] ?? null,
                     'manifest_url' => $order_data['data']['shipments']['manifest_url'] ?? null,
-                    'label_url' => $label_url ?? null,
+                    'label_url' => $label_url ?? " ",
                 ]);
 
         $order_product = DB::connection('mysql2')
