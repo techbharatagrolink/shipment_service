@@ -34,7 +34,8 @@ class ProcessDelhiveryWebhook implements ShouldQueue
 
     public function handle(Whatsapp $whatsapp)
     {
-        // Send Slack log
+
+// 🔹 Slack log (NO DB here)
         $response_slack = Http::withToken($this->slackToken)
             ->post($this->slackUrl, [
                 'channel' => '#tech',
@@ -42,75 +43,110 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             ]);
 
         Log::info('Processing Delhivery webhook', $this->payload);
-        Log::info('Delhivery webhook Slack Response', [
-            'slack_response' => $response_slack->json(),
-        ]);
 
-        // Extract shipment data
+// 🔹 Extract shipment
         $shipment = $this->payload['Shipment'] ?? null;
         if (! $shipment) {
             return;
         }
 
-        $orderId = $shipment['OrderNo'] ?? null;
+        $orderId  = $shipment['OrderNo'] ?? null;
         $vendorId = $shipment['VendorID'] ?? null;
-        $waybill = $shipment['AWB'] ?? null;
-        $invoice = $shipment['InvoiceNo'] ?? null;
+        $waybill  = $shipment['AWB'] ?? null;
+        $invoice  = $shipment['InvoiceNo'] ?? null;
 
-        // Status block
         $statusData = $shipment['Status'] ?? [];
-        $status = $statusData['Status'] ?? null;
+        $status     = $statusData['Status'] ?? null;
 
         if (! $orderId || ! $vendorId) {
             Log::warning('Delhivery webhook missing order/vendor id', $this->payload);
-
             return;
         }
 
-        // Update DB (mysql2)
-        DB::connection('mysql2')->table('shipment_delhivery')
-            ->updateOrInsert(
+// 🔥 SINGLE DB CONNECTION
+        $conn = DB::connection('mysql2');
+
+        try {
+
+            // 🔹 Upsert shipment
+            $conn->table('shipment_delhivery')->updateOrInsert(
                 [
-                    'order_id' => $orderId,
+                    'order_id'  => $orderId,
                     'vendor_id' => $vendorId,
                 ],
                 [
-                    'waybill' => $waybill,
-                    'status' => $status,
-                    'invoice_number' => $invoice,
-                    'tracking_url' => $shipment['TrackingURL'] ?? null,
-                    'warehouse_name' => $shipment['WarehouseName'] ?? null,
-                    'updated_at' => now(),
+                    'waybill'         => $waybill,
+                    'status'          => $status,
+                    'invoice_number'  => $invoice,
+                    'tracking_url'    => $shipment['TrackingURL'] ?? null,
+                    'warehouse_name'  => $shipment['WarehouseName'] ?? null,
+                    'updated_at'      => now(),
                 ]
             );
 
-        $orders = DB::connection('mysql2')
-            ->table('orders')
-            ->join('order_product', 'orders.order_id', '=', 'order_product.order_id')
-            ->join('shipment_delhivery', DB::raw('order_product.invoice_number COLLATE utf8mb4_unicode_ci'), '=', DB::raw('shipment_delhivery.invoice_number COLLATE utf8mb4_unicode_ci'))
-            ->where(DB::raw('shipment_delhivery.order_id COLLATE utf8mb4_unicode_ci'), '=', $order_id)
-            ->select('orders.*', 'order_product.*', 'shipment_delhivery.*')
-            ->first();
+            // 🔹 Fetch order
+            $orders = $conn->table('orders')
+                ->join('order_product', 'orders.order_id', '=', 'order_product.order_id')
+                ->join(
+                    'shipment_delhivery',
+                    DB::raw('order_product.invoice_number COLLATE utf8mb4_unicode_ci'),
+                    '=',
+                    DB::raw('shipment_delhivery.invoice_number COLLATE utf8mb4_unicode_ci')
+                )
+                ->where(
+                    DB::raw('shipment_delhivery.order_id COLLATE utf8mb4_unicode_ci'),
+                    '=',
+                    $orderId
+                )
+                ->select('orders.*', 'order_product.*', 'shipment_delhivery.*')
+                ->first();
 
-        $customer_phone = $orders->mobile;
-        $customer_name = $orders->fullname;
-        $table_order_id = $orders->order_id;
-
-        if ($table_order_id) {
-            if (strtolower($status) == 'delivered') {
-                $templet_params = [$customer_name, $table_order_id];
-                $whatsapp->send($customer_phone, 'order_updates_delivered_shiprocket', $templet_params);
-            } elseif (strtolower($status) == 'cancelled') {
-                $templet_params = [$customer_name, $table_order_id, 'Product unavailability'];
-                $whatsapp->send($customer_phone, 'order_updates_cancelled_shiprocket', $templet_params);
+            if (! $orders) {
+                Log::warning('Delhivery order not found', ['order_id' => $orderId]);
+                return;
             }
+
+            // 🔹 WhatsApp notifications (NO DB)
+            $customer_phone = $orders->mobile;
+            $customer_name  = $orders->fullname;
+            $table_order_id = $orders->order_id;
+
+            if (strtolower($status) === 'delivered') {
+                $whatsapp->send(
+                    $customer_phone,
+                    'order_updates_delivered_shiprocket',
+                    [$customer_name, $table_order_id]
+                );
+            }
+
+            if (strtolower($status) === 'cancelled') {
+                $whatsapp->send(
+                    $customer_phone,
+                    'order_updates_cancelled_shiprocket',
+                    [$customer_name, $table_order_id, 'Product unavailability']
+                );
+            }
+
+            Log::info('Delhivery shipment updated', [
+                'order_id' => $orderId,
+                'vendor_id' => $vendorId,
+                'status' => $status,
+                'slack_response' => $response_slack->json(),
+            ]);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Delhivery webhook failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+
+        } finally {
+            // ✅ GUARANTEED CLOSE
+            $conn->disconnect();
         }
 
-        Log::info('Delhivery shipment updated', [
-            'order_id' => $orderId,
-            'vendor_id' => $vendorId,
-            'status' => $status,
-            'slack_response' => $response_slack->json(),
-        ]);
     }
 }

@@ -51,45 +51,80 @@ class UpdateOrder implements ShouldQueue
         // Get latest order info from Shiprocket API
         $current_order = $this->shipRocketService->getOrder(intval($sr_order_id)) ?? null;
 
-        $orders = DB::connection('mysql2')
-            ->table('orders')
-            ->join('order_product', 'orders.order_id', '=', 'order_product.order_id')
-            ->join('shipment_shiprocket', DB::raw('order_product.invoice_number COLLATE utf8mb4_unicode_ci'), '=', DB::raw('shipment_shiprocket.invoice_number COLLATE utf8mb4_unicode_ci'))
-            ->where(DB::raw('shipment_shiprocket.channel_order_id COLLATE utf8mb4_unicode_ci'), '=', $order_id)
-            ->select('orders.*', 'order_product.*', 'shipment_shiprocket.*')
-            ->first();
+        $conn = DB::connection('mysql2');
 
-        // dd($orders);
+        try {
 
-        $customer_phone = $orders->mobile;
-        $customer_name = $orders->fullname;
-        $table_order_id = $orders->order_id;
+            $orders = $conn->table('orders')
+                ->join('order_product', 'orders.order_id', '=', 'order_product.order_id')
+                ->join(
+                    'shipment_shiprocket',
+                    DB::raw('order_product.invoice_number COLLATE utf8mb4_unicode_ci'),
+                    '=',
+                    DB::raw('shipment_shiprocket.invoice_number COLLATE utf8mb4_unicode_ci')
+                )
+                ->where(
+                    DB::raw('shipment_shiprocket.channel_order_id COLLATE utf8mb4_unicode_ci'),
+                    '=',
+                    $order_id
+                )
+                ->select('orders.*', 'order_product.*', 'shipment_shiprocket.*')
+                ->first();
 
-        if ($current_status == 'CANCELED' || strtolower($current_status) == 'cancelled') {
-            $templet_params = [$customer_name, $table_order_id, 'Product unavailability'];
-            $whatsapp_response = $this->whatsapp->send($customer_phone, 'order_cancel_shiprocket', $templet_params);
-        } elseif ($current_status == 'DELIVERED' || strtolower($current_status) == 'delivered') {
-            $templet_params = [$customer_name, $table_order_id];
-            $whatsapp_response = $this->whatsapp->send($customer_phone, 'order_updates_delivered_shiprocket', $templet_params);
+            if (! $orders) {
+                throw new \Exception('Order not found: ' . $order_id);
+            }
+
+            $customer_phone = $orders->mobile;
+            $customer_name  = $orders->fullname;
+            $table_order_id = $orders->order_id;
+
+            // WhatsApp logic (NO DB here)
+            if (strtolower($current_status) === 'canceled' || strtolower($current_status) === 'cancelled') {
+                $this->whatsapp->send(
+                    $customer_phone,
+                    'order_cancel_shiprocket',
+                    [$customer_name, $table_order_id, 'Product unavailability']
+                );
+            }
+
+            if (strtolower($current_status) === 'delivered') {
+                $this->whatsapp->send(
+                    $customer_phone,
+                    'order_updates_delivered_shiprocket',
+                    [$customer_name, $table_order_id]
+                );
+            }
+
+            // 🔥 Updates
+            $conn->table('shipment_shiprocket')
+                ->where('channel_order_id', $order_id)
+                ->update([
+                    'status' => $current_status,
+                    'shipment_status' => $shipment_status,
+                ]);
+
+            $conn->table('order_product')
+                ->where('invoice_number', $orders->invoice_number)
+                ->update([
+                    'status' => $current_status,
+                ]);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Shiprocket sync failed', [
+                'order_id' => $order_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+
+        } finally {
+            // ✅ GUARANTEED close
+            $conn->disconnect();
         }
 
-        \Log::info('Shiprocket Order:', [
-            'order' => $current_order,
-            'whatsapp_response' => $whatsapp_response ?? null,
-        ]);
 
-        // update
 
-        $shipment = DB::connection('mysql2')
-            ->table('shipment_shiprocket')
-            ->where('channel_order_id', $order_id)
-            ->update(['status' => $current_status, 'shipment_status' => $shipment_status]);
-
-        $order_product = DB::connection('mysql2')
-            ->table('order_product')
-            ->where('invoice_number', $orders->invoice_number)  // or correct field
-            ->update(['status' => $current_status]);
-
-        dump($order_product, $shipment);
     }
 }

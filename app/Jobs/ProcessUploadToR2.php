@@ -32,25 +32,39 @@ class ProcessUploadToR2 implements ShouldQueue
             'invoices/' . $this->filename
         );
 
-        $user_data = DB::connection('mysql2')->table('orders')
-            ->where('order_id', $this->order_id)->first();
+        $conn = DB::connection('mysql2');
 
-        DB::connection('mysql2')->table('orders')
-            ->where('order_id', $this->order_id)
-            ->update([
-                'invoice_pdf' => $result
+        try {
+            $user_data = DB::connection('mysql2')->table('orders')
+                ->where('order_id', $this->order_id)->first();
+
+            $conn->table('orders')
+                ->where('order_id', $this->order_id)
+                ->update([
+                    'invoice_pdf' => $result
+                ]);
+
+            $wp_res =$whatsapp->send($user_data->mobile,'customer_invoice',[
+                'file',
+                $user_data->fullname,
+                $this->order_id,
+                $result,
+                $this->filename
             ]);
 
-        $wp_res =$whatsapp->send($user_data->mobile,'customer_invoice',[
-            'file',
-            $user_data->fullname,
-            $this->order_id,
-            $result,
-            $this->filename
-        ]);
+            \Log::info("wp res : $wp_res");
+            // ✅ cleanup temp file
+            Storage::delete($this->storedPath);
+        }catch (\Throwable $e) {
+            \Log::error('DB update queue failed', [
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
 
-        \Log::info("wp res : $wp_res");
-        // ✅ cleanup temp file
-        Storage::delete($this->storedPath);
+        }finally{
+            $conn->disconnect();
+        }
+
+
     }
 }

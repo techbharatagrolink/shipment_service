@@ -55,33 +55,53 @@ class SyncOrder implements ShouldQueue
 
         //dd($shipment_id,$label_url,$invoice_number);
 
-        $shipment = DB::connection('mysql2')
-            ->table('shipment_shiprocket')
-            ->where('channel_order_id', $channel_order_id)
-            ->update(
-                [
-                    'status' => $order_data['data']['status'],
-                    'shipment_status' => $order_data['data']['shipments']['status'] ?? null,
-                    'awb_code' => $awb ?? null,
+        $conn = DB::connection('mysql2');
+
+        try {
+
+            $shipment = $conn->table('shipment_shiprocket')
+                ->where('channel_order_id', $channel_order_id)
+                ->update([
+                    'status'             => $order_data['data']['status'],
+                    'shipment_status'    => $order_data['data']['shipments']['status'] ?? null,
+                    'awb_code'           => $awb ?? null,
                     'courier_company_id' => $order_data['data']['shipments']['courier_id'] ?? null,
-                    'courier_name' => $order_data['data']['shipments']['courier'] ?? null,
-                    'updated_at' => $last_update_date,
-                    'invoice_url' => $order_data['data']['shipments']['invoice_link'] ?? null,
-                    'manifest_url' => $order_data['data']['shipments']['manifest_url'] ?? null,
-                    'label_url' => $label_url ?? " ",
+                    'courier_name'       => $order_data['data']['shipments']['courier'] ?? null,
+                    'updated_at'         => $last_update_date,
+                    'invoice_url'        => $order_data['data']['shipments']['invoice_link'] ?? null,
+                    'manifest_url'       => $order_data['data']['shipments']['manifest_url'] ?? null,
+                    'label_url'          => $label_url ?? null, // ❌ no space string
                 ]);
 
-        $order_product = DB::connection('mysql2')
-            ->table('order_product')
-            ->where('invoice_number', $channel_order_id)  // or correct field
-            ->update([
-                'status' => $order_data['data']['status'],
-                'tracking_id' => $awb ?? null,
-                'tracking_url' => $awb!='' ? "https://shiprocket.co/tracking/$awb" : null,
-                'print_label' => $label_url ?? null,
+            $order_product = $conn->table('order_product')
+                ->where('invoice_number', $channel_order_id)
+                ->update([
+                    'status'        => $order_data['data']['status'],
+                    'tracking_id'   => $awb ?? null,
+                    'tracking_url'  => !empty($awb)
+                        ? "https://shiprocket.co/tracking/{$awb}"
+                        : null,
+                    'print_label'   => $label_url ?? null,
+                ]);
+
+            \Log::info('DB update queue', [
+                'shipment_updated' => $shipment,
+                'order_updated'    => $order_product,
+                'channel_order_id' => $channel_order_id,
             ]);
 
-        \Log::info("db update queue: $shipment , $order_product");
-        //return [$shipment,$order_product];
+        } catch (\Throwable $e) {
+
+            \Log::error('DB update queue failed', [
+                'channel_order_id' => $channel_order_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+
+        } finally {
+            // ✅ GUARANTEED close
+            $conn->disconnect();
+        }
     }
 }

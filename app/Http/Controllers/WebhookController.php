@@ -34,7 +34,7 @@ class WebhookController extends Controller
     }
 
     public function syncorder($order_id){
-        SyncOrder::dispatch($order_id)->onQueue('high');
+        SyncOrder::dispatch($order_id)->onQueue('test25');
         return [
             'success' => true,
             'message' => 'Order has been queued for synced',

@@ -59,7 +59,10 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                \Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_TIMEOUT => 5,          // short connection timeout
+                PDO::ATTR_PERSISTENT => false,   // prevent too many open connections
+                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION wait_timeout=300", // auto-close idle connections
+                \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'), // optional
             ]) : [],
         ],
         'mysql2' => [
@@ -73,6 +76,12 @@ return [
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'prefix_indexes' => true,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::ATTR_TIMEOUT => 5,          // short connection timeout
+                PDO::ATTR_PERSISTENT => false,   // prevent too many open connections
+                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION wait_timeout=300", // auto-close idle connections
+                \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'), // optional
+            ]) : [],
         ],
         'mariadb' => [
             'driver' => 'mariadb',
