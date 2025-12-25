@@ -269,7 +269,7 @@ class MetaCatalogService
                 $metaData = [
                     'id' => $productData['id'], // Meta uses 'id' not 'retailer_id'
                     'title' => $productData['title'], // Meta uses 'title' not 'name'
-                    'description' => $productData['description'] ?? '',
+                    'description' => substr($productData['description'], 0, 450) ?? '',
                     'availability' => $productData['availability'],
                     'price' => $metaPrice,
                     'link' => $productData['link'], // Meta uses 'link' not 'url'

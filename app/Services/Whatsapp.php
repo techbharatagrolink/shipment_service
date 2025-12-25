@@ -33,8 +33,8 @@ class Whatsapp
             "templateParams" => $params_file ?? $template_params,
             "source" => "new-landing-page form",
             "media" => (object) [
-                "url" => $template_params[3],
-                "filename" => $template_params[4]
+                "url" => $template_params[3] ?? "",
+                "filename" => $template_params[4] ?? ""
             ],
             "buttons" => [],
             "carouselCards" => [],
