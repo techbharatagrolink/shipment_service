@@ -234,7 +234,7 @@ class ShiprocketService
     public function getAllPickup()
     {
         $token = $this->authenticate();
-        dd($token);
+       // dd($token);
 
         return Http::withToken($token)
             ->get('https://apiv2.shiprocket.in/v1/external/settings/company/pickup');
