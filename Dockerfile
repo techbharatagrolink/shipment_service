@@ -48,14 +48,16 @@ stderr_logfile=/var/log/supervisor/octane.err.log
 stdout_logfile=/var/log/supervisor/octane.out.log
 
 [program:queue]
-command=/usr/local/bin/php /app/artisan queue:work --queue=high,low --sleep=1 --tries=3 --timeout=120
+process_name=%(program_name)s_%(process_num)02d
+command=/usr/local/bin/php /app/artisan queue:work database --queue=high,low --sleep=3 --tries=3 --timeout=120
 directory=/app
 autostart=true
 autorestart=true
+numprocs=1
 user=www-data
 redirect_stderr=true
-stdout_logfile=/dev/stdout
-stderr_logfile=/dev/stderr
+stdout_logfile=/var/log/supervisor/queue.log
+stopwaitsecs=3600
 EOF
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
