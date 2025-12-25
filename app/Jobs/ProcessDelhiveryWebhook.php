@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\Whatsapp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -111,20 +112,26 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             $customer_name  = $orders->fullname;
             $table_order_id = $orders->order_id;
 
-            if (strtolower($status) === 'delivered') {
-                $whatsapp->send(
-                    $customer_phone,
-                    'order_updates_delivered_shiprocket',
-                    [$customer_name, $table_order_id]
-                );
-            }
 
-            if (strtolower($status) === 'cancelled') {
-                $whatsapp->send(
-                    $customer_phone,
-                    'order_updates_cancelled_shiprocket',
-                    [$customer_name, $table_order_id, 'Product unavailability']
-                );
+
+            try {
+                if (strtolower($status) === 'delivered') {
+                    $whatsapp->send(
+                        $customer_phone,
+                        'order_updates_delivered_shiprocket',
+                        [$customer_name, $table_order_id]
+                    );
+                }
+
+                if (strtolower($status) === 'cancelled') {
+                    $whatsapp->send(
+                        $customer_phone,
+                        'order_updates_cancelled_shiprocket',
+                        [$customer_name, $table_order_id, 'Product unavailability']
+                    );
+                }
+            }catch (\Exception $exception){
+                Log::error($exception->getMessage());
             }
 
             Log::info('Delhivery shipment updated', [
