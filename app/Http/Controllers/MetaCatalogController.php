@@ -60,6 +60,10 @@ class MetaCatalogController extends Controller
 
     public function createProduct(Request $request)
     {
+
+        $description = $request->input('description');
+
+
         $validated = $request->validate([
             'id' => 'required|string|max:100',
             'title' => 'required|string|max:255',

@@ -44,6 +44,7 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             ]);
 
         Log::info('Processing Delhivery webhook', $this->payload);
+        $conn = DB::connection('mysql2');
 
 // 🔹 Extract shipment
         $shipment = $this->payload['Shipment'] ?? null;
@@ -51,39 +52,54 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             return;
         }
 
-        $orderId  = $shipment['OrderNo'] ?? null;
-        $vendorId = $shipment['VendorID'] ?? null;
+        $orderId  = $shipment['ReferenceNo'] ?? null;
         $waybill  = $shipment['AWB'] ?? null;
-        $invoice  = $shipment['InvoiceNo'] ?? null;
-
         $statusData = $shipment['Status'] ?? [];
         $status     = $statusData['Status'] ?? null;
+        $trackingUrl = $shipment['TrackingURL'] ?? null;
 
-        if (! $orderId || ! $vendorId) {
-            Log::warning('Delhivery webhook missing order/vendor id', $this->payload);
+        
+
+        $vendorId = $shipment['VendorID'] ?? null;
+       
+        $invoice  = $shipment['InvoiceNo'] ?? null;
+
+        
+
+        if (! $orderId) {
+            Log::warning('Delhivery webhook missing order id', $this->payload);
             return;
         }
 
+        Log::info('Delhivery data to update', $statusData);
 // 🔥 SINGLE DB CONNECTION
-        $conn = DB::connection('mysql2');
+        
 
         try {
 
-            // 🔹 Upsert shipment
-            $conn->table('shipment_delhivery')->updateOrInsert(
-                [
-                    'order_id'  => $orderId,
-                    'vendor_id' => $vendorId,
-                ],
-                [
-                    'waybill'         => $waybill,
-                    'status'          => $status,
-                    'invoice_number'  => $invoice,
-                    'tracking_url'    => $shipment['TrackingURL'] ?? null,
-                    'warehouse_name'  => $shipment['WarehouseName'] ?? null,
-                    'updated_at'      => now(),
-                ]
-            );
+
+            $data_shipment_delivery = $conn->table('shipment_delhivery')
+    ->where('order_id', $orderId)
+    ->first();
+
+    //dump($data_shipment_delivery);
+            
+           $conn->table('shipment_delhivery')
+    ->where('order_id', $orderId)
+    ->update([
+        'waybill'        => $waybill,
+        'status'         => $status,
+        'tracking_url'   => $waybill!=null ? "https://www.delhivery.com/track/package/$waybill" : null,
+        'updated_at'     => now(),
+    ]);
+
+         $conn->table('order_product')
+    ->where('invoice_number',trim($data_shipment_delivery->invoice_number))
+    ->update([
+        'status'     => $status,
+        'update_date' => now(),
+    ]);
+
 
             // 🔹 Fetch order
             $orders = $conn->table('orders')
