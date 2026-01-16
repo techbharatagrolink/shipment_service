@@ -143,6 +143,8 @@ Route::post('/webhook/delhivery', [DelhiveryWebhookController::class, 'handle'])
 Route::post('/syncorder/{order_id}', [WebhookController::class, 'syncorder']);
 Route::post('/syncAllOrder', [WebhookController::class, 'syncAllOrder']);
 
+Route::get('/test', [WebhookController::class, 'test']);
+
 
 
 

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\SendSlackNotification;
 use App\Services\ShiprocketService;
 use App\Services\Whatsapp;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -90,6 +91,13 @@ class UpdateOrder implements ShouldQueue
                 }
 
                 if (strtolower($current_status) === 'delivered') {
+
+                    $conn->table('order_product')
+    ->where('invoice_number',trim($orders->invoice_number))
+    ->update([
+        'delivery_date' => now(),
+    ]);
+
                     $this->whatsapp->send(
                         $customer_phone,
                         'order_updates_delivered_shiprocket',
@@ -99,6 +107,25 @@ class UpdateOrder implements ShouldQueue
             } catch (\Throwable $e) {
                 // 🔥 Log but DO NOT stop execution
                 \Log::warning('WhatsApp send failed', [
+                    'order_id' => $table_order_id,
+                    'status'   => $current_status,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
+
+            // Slack notification for "Out for Delivery" status
+            try {
+                if (str_contains(strtoupper($current_status), 'OUT FOR DELIVERY')) {
+                    SendSlackNotification::dispatch([
+                        'order_id' => $table_order_id,
+                        'customer_name' => $customer_name,
+                        'status' => $current_status,
+                        'channel' => '#order-updates',
+                    ])->onQueue('high');
+                }
+            } catch (\Throwable $e) {
+                // 🔥 Log but DO NOT stop execution
+                \Log::warning('Slack notification dispatch failed', [
                     'order_id' => $table_order_id,
                     'status'   => $current_status,
                     'error'    => $e->getMessage(),

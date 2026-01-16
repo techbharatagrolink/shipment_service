@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\SendSlackNotification;
 use App\Services\Whatsapp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -43,6 +44,8 @@ class ProcessDelhiveryWebhook implements ShouldQueue
                 'text' => json_encode($this->payload),
             ]);
 
+        
+
         Log::info('Processing Delhivery webhook', $this->payload);
         $conn = DB::connection('mysql2');
 
@@ -64,11 +67,27 @@ class ProcessDelhiveryWebhook implements ShouldQueue
        
         $invoice  = $shipment['InvoiceNo'] ?? null;
 
+
         
 
         if (! $orderId) {
             Log::warning('Delhivery webhook missing order id', $this->payload);
             return;
+        }
+
+        if (strtolower($status) === 'out for delivery') {
+            $resnoti= Http::withToken($this->slackToken)
+            ->post($this->slackUrl, [
+                'channel' => '#order-updates',
+                'text' => "Order ID: {$orderId} is {$status}",
+            ]);
+            if ($resnoti->successful()) {
+                Log::info('Slack notification sent' );
+            } else {
+                Log::error('Slack notification failed');
+            }
+        } else {
+            Log::error('Slack notification failed');
         }
 
         Log::info('Delhivery data to update', $statusData);
@@ -82,7 +101,7 @@ class ProcessDelhiveryWebhook implements ShouldQueue
     ->where('order_id', $orderId)
     ->first();
 
-    //dump($data_shipment_delivery);
+    //var_dump($data_shipment_delivery);exit;
             
            $conn->table('shipment_delhivery')
     ->where('order_id', $orderId)
@@ -132,6 +151,12 @@ class ProcessDelhiveryWebhook implements ShouldQueue
 
             try {
                 if (strtolower($status) === 'delivered') {
+
+                    $conn->table('order_product')
+    ->where('invoice_number',trim($data_shipment_delivery->invoice_number))
+    ->update([
+        'delivery_date' => now(),
+    ]);
                     $whatsapp->send(
                         $customer_phone,
                         'order_updates_delivered_shiprocket',
@@ -149,6 +174,8 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             }catch (\Exception $exception){
                 Log::error($exception->getMessage());
             }
+
+            
 
             Log::info('Delhivery shipment updated', [
                 'order_id' => $orderId,

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use phpDocumentor\Reflection\Types\This;
 use function Pest\Laravel\json;
+use Illuminate\Support\Facades\Process;
 
 class WebhookController extends Controller
 {
@@ -89,5 +90,18 @@ class WebhookController extends Controller
             'message' => 'File queued for R2 upload',
         ]);
     }
+
+   public function test()
+{
+    // Use PHP_BINARY to get the path to the current PHP version
+    // Use base_path('artisan') to get the absolute path to your artisan file
+    $result = Process::run(PHP_BINARY . ' ' . base_path('artisan') . ' octane:stop');
+    
+    return [
+        'output'    => $result->output(),
+        'error'     => $result->errorOutput(),
+        'exit_code' => $result->exitCode(),
+    ];
+}
 
 }
