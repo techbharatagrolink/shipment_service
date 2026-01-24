@@ -107,6 +107,7 @@ class UpdateOrder implements ShouldQueue
                 if (str_contains(strtolower($current_status), 'rto')) {
                     $conn->table('order_product')
                         ->where('invoice_number', trim($orders->invoice_number))
+                        ->whereNull('rto_date')
                         ->update([
                             'rto_date' => now(),
                         ]);

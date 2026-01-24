@@ -156,6 +156,7 @@ class ProcessDelhiveryWebhook implements ShouldQueue
                 if (str_contains(strtolower($status), 'rto')) {
                     $conn->table('order_product')
                         ->where('invoice_number', trim($data_shipment_delivery->invoice_number))
+                        ->whereNull('rto_date')
                         ->update([
                             'rto_date' => now(),
                         ]);
