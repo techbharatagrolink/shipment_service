@@ -56,7 +56,7 @@ class ShiprocketController extends Controller
         ]);
 
         $response = $this->shiprocket->createOrder($validated);
-        ///dd($response->json());
+        // /dd($response->json());
 
         if ($response->successful()) {
             $data = $response->json();
@@ -76,12 +76,18 @@ class ShiprocketController extends Controller
         return response()->json(['error' => 'Failed to create shipment', 'details' => $response->json()], 500);
     }
 
+    /**
+     * Update an existing Shiprocket order via adhoc API.
+     *
+     * API URL: POST /api/orders/update
+     * Shiprocket: https://apiv2.shiprocket.in/v1/external/orders/update/adhoc
+     */
     public function updateOrder(Request $request)
     {
         $validated = $request->validate([
             'order_id' => 'required|string',
             'order_date' => 'required|date_format:Y-m-d',
-            'pickup_location' => 'required|string',
+            'pickup_location' => 'nullable|string',
             'channel_id' => 'nullable|string',
             'comment' => 'nullable|string',
             'billing_customer_name' => 'required|string',
@@ -89,7 +95,7 @@ class ShiprocketController extends Controller
             'billing_address' => 'required|string',
             'billing_address_2' => 'nullable|string',
             'billing_city' => 'required|string',
-            'billing_pincode' => 'required|integer',
+            'billing_pincode' => 'required|string',
             'billing_state' => 'required|string',
             'billing_country' => 'required|string',
             'billing_email' => 'required|email',
@@ -111,9 +117,9 @@ class ShiprocketController extends Controller
             'order_items.*.sku' => 'required|string',
             'order_items.*.units' => 'required|integer',
             'order_items.*.selling_price' => 'required|numeric',
-            'order_items.*.discount' => 'nullable|numeric',
-            'order_items.*.tax' => 'nullable|numeric',
-            'order_items.*.hsn' => 'nullable|numeric',
+            'order_items.*.discount' => 'nullable',
+            'order_items.*.tax' => 'nullable',
+            'order_items.*.hsn' => 'nullable',
             'payment_method' => 'required|string',
             'shipping_charges' => 'nullable|numeric',
             'giftwrap_charges' => 'nullable|numeric',

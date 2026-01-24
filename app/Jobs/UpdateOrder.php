@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Jobs\SendSlackNotification;
 use App\Services\ShiprocketService;
 use App\Services\Whatsapp;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -73,11 +72,11 @@ class UpdateOrder implements ShouldQueue
                 ->first();
 
             if (! $orders) {
-                throw new \Exception('Order not found: ' . $order_id);
+                throw new \Exception('Order not found: '.$order_id);
             }
 
             $customer_phone = $orders->mobile;
-            $customer_name  = $orders->fullname;
+            $customer_name = $orders->fullname;
             $table_order_id = $orders->order_id;
 
             // WhatsApp logic (NO DB here, NO BREAK FLOW)
@@ -93,10 +92,10 @@ class UpdateOrder implements ShouldQueue
                 if (strtolower($current_status) === 'delivered') {
 
                     $conn->table('order_product')
-    ->where('invoice_number',trim($orders->invoice_number))
-    ->update([
-        'delivery_date' => now(),
-    ]);
+                        ->where('invoice_number', trim($orders->invoice_number))
+                        ->update([
+                            'delivery_date' => now(),
+                        ]);
 
                     $this->whatsapp->send(
                         $customer_phone,
@@ -104,12 +103,20 @@ class UpdateOrder implements ShouldQueue
                         [$customer_name, $table_order_id]
                     );
                 }
+
+                if (str_contains(strtolower($current_status), 'rto')) {
+                    $conn->table('order_product')
+                        ->where('invoice_number', trim($orders->invoice_number))
+                        ->update([
+                            'rto_date' => now(),
+                        ]);
+                }
             } catch (\Throwable $e) {
                 // 🔥 Log but DO NOT stop execution
                 \Log::warning('WhatsApp send failed', [
                     'order_id' => $table_order_id,
-                    'status'   => $current_status,
-                    'error'    => $e->getMessage(),
+                    'status' => $current_status,
+                    'error' => $e->getMessage(),
                 ]);
             }
 
@@ -127,8 +134,8 @@ class UpdateOrder implements ShouldQueue
                 // 🔥 Log but DO NOT stop execution
                 \Log::warning('Slack notification dispatch failed', [
                     'order_id' => $table_order_id,
-                    'status'   => $current_status,
-                    'error'    => $e->getMessage(),
+                    'status' => $current_status,
+                    'error' => $e->getMessage(),
                 ]);
             }
 
@@ -154,13 +161,10 @@ class UpdateOrder implements ShouldQueue
             ]);
 
             throw $e;
-
         } finally {
             // ✅ GUARANTEED close
             $conn->disconnect();
         }
-
-
 
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Jobs\SendSlackNotification;
 use App\Services\Whatsapp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,52 +36,46 @@ class ProcessDelhiveryWebhook implements ShouldQueue
     public function handle(Whatsapp $whatsapp)
     {
 
-// 🔹 Slack log (NO DB here)
+        // 🔹 Slack log (NO DB here)
         $response_slack = Http::withToken($this->slackToken)
             ->post($this->slackUrl, [
                 'channel' => '#tech',
                 'text' => json_encode($this->payload),
             ]);
 
-        
-
         Log::info('Processing Delhivery webhook', $this->payload);
         $conn = DB::connection('mysql2');
 
-// 🔹 Extract shipment
+        // 🔹 Extract shipment
         $shipment = $this->payload['Shipment'] ?? null;
         if (! $shipment) {
             return;
         }
 
-        $orderId  = $shipment['ReferenceNo'] ?? null;
-        $waybill  = $shipment['AWB'] ?? null;
+        $orderId = $shipment['ReferenceNo'] ?? null;
+        $waybill = $shipment['AWB'] ?? null;
         $statusData = $shipment['Status'] ?? [];
-        $status     = $statusData['Status'] ?? null;
+        $status = $statusData['Status'] ?? null;
         $trackingUrl = $shipment['TrackingURL'] ?? null;
 
-        
-
         $vendorId = $shipment['VendorID'] ?? null;
-       
-        $invoice  = $shipment['InvoiceNo'] ?? null;
 
-
-        
+        $invoice = $shipment['InvoiceNo'] ?? null;
 
         if (! $orderId) {
             Log::warning('Delhivery webhook missing order id', $this->payload);
+
             return;
         }
 
         if (strtolower($status) === 'out for delivery') {
-            $resnoti= Http::withToken($this->slackToken)
-            ->post($this->slackUrl, [
-                'channel' => '#order-updates',
-                'text' => "Order ID: {$orderId} is {$status}",
-            ]);
+            $resnoti = Http::withToken($this->slackToken)
+                ->post($this->slackUrl, [
+                    'channel' => '#order-updates',
+                    'text' => "Order ID: {$orderId} is {$status}",
+                ]);
             if ($resnoti->successful()) {
-                Log::info('Slack notification sent' );
+                Log::info('Slack notification sent');
             } else {
                 Log::error('Slack notification failed');
             }
@@ -91,34 +84,31 @@ class ProcessDelhiveryWebhook implements ShouldQueue
         }
 
         Log::info('Delhivery data to update', $statusData);
-// 🔥 SINGLE DB CONNECTION
-        
+        // 🔥 SINGLE DB CONNECTION
 
         try {
 
-
             $data_shipment_delivery = $conn->table('shipment_delhivery')
-    ->where('order_id', $orderId)
-    ->first();
+                ->where('order_id', $orderId)
+                ->first();
 
-    //var_dump($data_shipment_delivery);exit;
-            
-           $conn->table('shipment_delhivery')
-    ->where('order_id', $orderId)
-    ->update([
-        'waybill'        => $waybill,
-        'status'         => $status,
-        'tracking_url'   => $waybill!=null ? "https://www.delhivery.com/track/package/$waybill" : null,
-        'updated_at'     => now(),
-    ]);
+            // var_dump($data_shipment_delivery);exit;
 
-         $conn->table('order_product')
-    ->where('invoice_number',trim($data_shipment_delivery->invoice_number))
-    ->update([
-        'status'     => $status,
-        'update_date' => now(),
-    ]);
+            $conn->table('shipment_delhivery')
+                ->where('order_id', $orderId)
+                ->update([
+                    'waybill' => $waybill,
+                    'status' => $status,
+                    'tracking_url' => $waybill != null ? "https://www.delhivery.com/track/package/$waybill" : null,
+                    'updated_at' => now(),
+                ]);
 
+            $conn->table('order_product')
+                ->where('invoice_number', trim($data_shipment_delivery->invoice_number))
+                ->update([
+                    'status' => $status,
+                    'update_date' => now(),
+                ]);
 
             // 🔹 Fetch order
             $orders = $conn->table('orders')
@@ -139,29 +129,36 @@ class ProcessDelhiveryWebhook implements ShouldQueue
 
             if (! $orders) {
                 Log::warning('Delhivery order not found', ['order_id' => $orderId]);
+
                 return;
             }
 
             // 🔹 WhatsApp notifications (NO DB)
             $customer_phone = $orders->mobile;
-            $customer_name  = $orders->fullname;
+            $customer_name = $orders->fullname;
             $table_order_id = $orders->order_id;
-
-
 
             try {
                 if (strtolower($status) === 'delivered') {
 
                     $conn->table('order_product')
-    ->where('invoice_number',trim($data_shipment_delivery->invoice_number))
-    ->update([
-        'delivery_date' => now(),
-    ]);
+                        ->where('invoice_number', trim($data_shipment_delivery->invoice_number))
+                        ->update([
+                            'delivery_date' => now(),
+                        ]);
                     $whatsapp->send(
                         $customer_phone,
                         'order_updates_delivered_shiprocket',
                         [$customer_name, $table_order_id]
                     );
+                }
+
+                if (str_contains(strtolower($status), 'rto')) {
+                    $conn->table('order_product')
+                        ->where('invoice_number', trim($data_shipment_delivery->invoice_number))
+                        ->update([
+                            'rto_date' => now(),
+                        ]);
                 }
 
                 if (strtolower($status) === 'cancelled') {
@@ -171,11 +168,9 @@ class ProcessDelhiveryWebhook implements ShouldQueue
                         [$customer_name, $table_order_id, 'Product unavailability']
                     );
                 }
-            }catch (\Exception $exception){
+            } catch (\Exception $exception) {
                 Log::error($exception->getMessage());
             }
-
-            
 
             Log::info('Delhivery shipment updated', [
                 'order_id' => $orderId,
@@ -192,7 +187,6 @@ class ProcessDelhiveryWebhook implements ShouldQueue
             ]);
 
             throw $e;
-
         } finally {
             // ✅ GUARANTEED CLOSE
             $conn->disconnect();
