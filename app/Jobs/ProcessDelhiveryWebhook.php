@@ -88,15 +88,17 @@ class ProcessDelhiveryWebhook implements ShouldQueue
 
         try {
 
-            $data_shipment_delivery = $conn->table('shipment_delhivery')
+            $data_shipment_delivery = $conn->table('order_product')
                 ->where('order_id', $orderId)
+                ->where('tracking_id', $waybill)
                 ->first();
 
             // var_dump($data_shipment_delivery);exit;
 
             $conn->table('shipment_delhivery')
                 ->where('order_id', $orderId)
-                ->update([
+                ->where('vendor_id', $data_shipment_delivery->vendor_id)
+                ->update([  
                     'waybill' => $waybill,
                     'status' => $status,
                     'tracking_url' => $waybill != null ? "https://www.delhivery.com/track/package/$waybill" : null,
